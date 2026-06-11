@@ -1,20 +1,6 @@
 // background.js for Intrackr AI Task Builder Extension
 
-let backendUrl = "http://localhost:3000";
-
-// Initialize backend URL from storage
-chrome.storage.local.get("backendUrl", (data) => {
-  if (data.backendUrl) {
-    backendUrl = data.backendUrl;
-  }
-});
-
-// Keep backend URL in sync with settings changes
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes.backendUrl) {
-    backendUrl = changes.backendUrl.newValue || "http://localhost:3000";
-  }
-});
+const backendUrl = "https://intrackr-ai-task-builder.onrender.com";
 
 function captureActiveTab(windowId) {
   return new Promise((resolve, reject) => {
