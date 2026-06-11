@@ -1,5 +1,21 @@
 // background.js for Intrackr AI Task Builder Extension
 
+let backendUrl = "http://localhost:3000";
+
+// Initialize backend URL from storage
+chrome.storage.local.get("backendUrl", (data) => {
+  if (data.backendUrl) {
+    backendUrl = data.backendUrl;
+  }
+});
+
+// Keep backend URL in sync with settings changes
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.backendUrl) {
+    backendUrl = changes.backendUrl.newValue || "http://localhost:3000";
+  }
+});
+
 function captureActiveTab(windowId) {
   return new Promise((resolve, reject) => {
     chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
@@ -89,15 +105,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const pageData = JSON.parse(decodedJson);
 
           // Dump props to local/configured server
-          chrome.storage.local.get("backendUrl", (data) => {
-            const baseUrl = data.backendUrl || "http://localhost:3000";
-            fetch(`${baseUrl}/dump-props`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(pageData.props || {})
-            }).catch(err => {
-              console.warn("Failed to dump props (this is normal if the backend is offline or doesn't support dump-props):", err.message);
-            });
+          fetch(`${backendUrl}/dump-props`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pageData.props || {})
+          }).catch(err => {
+            console.warn("Failed to dump props (this is normal if the backend is offline or doesn't support dump-props):", err.message);
           });
 
           const projects = pageData.props?.projects || [];
