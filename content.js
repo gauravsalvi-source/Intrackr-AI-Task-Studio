@@ -1,5 +1,12 @@
 (() => {
-const API_BASE = "http://localhost:3000";
+let API_BASE = "http://localhost:3000";
+
+// Fetch stored backend URL
+chrome.storage.local.get("backendUrl", (data) => {
+  if (data.backendUrl) {
+    API_BASE = data.backendUrl;
+  }
+});
 
 const root = document.createElement("div");
 root.innerHTML = `
@@ -7,6 +14,7 @@ root.innerHTML = `
     <header id="intrackr-ai-header">
       <span>Create New Task</span>
       <div class="header-actions">
+        <button id="intrackr-ai-settings-toggle" type="button" title="Settings" aria-label="Settings" style="font-size: 16px; padding: 0; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;">⚙️</button>
         <button id="intrackr-ai-theme" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
           <svg id="intrackr-ai-theme-icon" class="moon" aria-hidden="true" viewBox="0 0 24 24">
             <path class="moon-shape" d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 7 7 0 1 0 20.5 15.5Z"></path>
@@ -18,6 +26,18 @@ root.innerHTML = `
         <button id="intrackr-ai-close" type="button" title="Close" aria-label="Close">×</button>
       </div>
     </header>
+
+    <section id="intrackr-ai-settings-panel" style="display: none; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--intrackr-ai-border); border-radius: 6px; background: var(--intrackr-ai-panel); margin-bottom: 4px;">
+      <div style="font-weight: 700; font-size: 12px; color: var(--intrackr-ai-muted); text-transform: uppercase;">Extension Settings</div>
+      <div>
+        <label for="intrackr-ai-backend-url" style="display: block; margin-bottom: 4px; font-size: 11px; font-weight: 600;">Backend API URL:</label>
+        <input id="intrackr-ai-backend-url" type="url" placeholder="http://localhost:3000" style="height: 32px; padding: 0 8px; width: 100%; box-sizing: border-box;" />
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 4px;">
+        <button id="intrackr-ai-settings-save" class="primary" type="button" style="height: 30px; font-size: 12px; flex: 1; padding: 0;">Save</button>
+        <button id="intrackr-ai-settings-cancel" type="button" style="height: 30px; font-size: 12px; flex: 1; padding: 0;">Cancel</button>
+      </div>
+    </section>
 
     <section id="intrackr-ai-body">
       <label for="intrackr-ai-input">Issue summary</label>
@@ -120,6 +140,51 @@ const previewGrid = document.getElementById("intrackr-ai-images-preview-grid");
 const saveDirectBtn = document.getElementById("intrackr-ai-save-direct");
 const insertBtn = document.getElementById("intrackr-ai-insert");
 const captureBtn = document.getElementById("intrackr-ai-btn-capture");
+
+const settingsToggle = document.getElementById("intrackr-ai-settings-toggle");
+const settingsPanel = document.getElementById("intrackr-ai-settings-panel");
+const backendUrlInput = document.getElementById("intrackr-ai-backend-url");
+const settingsSaveBtn = document.getElementById("intrackr-ai-settings-save");
+const settingsCancelBtn = document.getElementById("intrackr-ai-settings-cancel");
+
+// Settings event listeners
+if (settingsToggle && settingsPanel) {
+  settingsToggle.addEventListener("click", () => {
+    const isHidden = settingsPanel.style.display === "none";
+    settingsPanel.style.display = isHidden ? "flex" : "none";
+    if (isHidden && backendUrlInput) {
+      backendUrlInput.value = API_BASE;
+      backendUrlInput.focus();
+    }
+  });
+}
+
+if (settingsCancelBtn && settingsPanel) {
+  settingsCancelBtn.addEventListener("click", () => {
+    settingsPanel.style.display = "none";
+  });
+}
+
+if (settingsSaveBtn && settingsPanel && backendUrlInput) {
+  settingsSaveBtn.addEventListener("click", () => {
+    let newUrl = backendUrlInput.value.trim();
+    if (newUrl && !/^https?:\/\//i.test(newUrl)) {
+      newUrl = "http://" + newUrl;
+    }
+    // Remove trailing slash if present
+    if (newUrl.endsWith("/")) {
+      newUrl = newUrl.slice(0, -1);
+    }
+    
+    chrome.storage.local.set({ backendUrl: newUrl }, () => {
+      API_BASE = newUrl || "http://localhost:3000";
+      setStatus("Settings saved successfully.");
+      settingsPanel.style.display = "none";
+      // Refetch dropdown projects since API URL might have changed
+      fetchProjectsDropdown();
+    });
+  });
+}
 
 const isOnCreateTaskPage = window.location.href.startsWith("https://intrackr.thalia-apps.com/tasks/create") || (window.location.href.includes("/tasks/") && window.location.href.includes("/edit"));
 

@@ -88,12 +88,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             .replace(/&#039;/g, "'");
           const pageData = JSON.parse(decodedJson);
 
-          // Dump props to local server
-          fetch("http://localhost:3000/dump-props", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(pageData.props || {})
-          }).catch(err => console.error("Failed to dump props:", err));
+          // Dump props to local/configured server
+          chrome.storage.local.get("backendUrl", (data) => {
+            const baseUrl = data.backendUrl || "http://localhost:3000";
+            fetch(`${baseUrl}/dump-props`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(pageData.props || {})
+            }).catch(err => {
+              console.warn("Failed to dump props (this is normal if the backend is offline or doesn't support dump-props):", err.message);
+            });
+          });
 
           const projects = pageData.props?.projects || [];
           if (projects.length > 0) {
