@@ -1,0 +1,835 @@
+{
+  "errors": {},
+  "auth": {
+    "user": {
+      "id": 26,
+      "name": "Gaurav Salvi",
+      "username": "gauravsalvi",
+      "email": "gauravsalvi@thaliatechnologies.com",
+      "avatar": "https://intrackr.thalia-apps.com/storage/user-avatars/26/10f041fe-1da9-4689-8c59-149176c24447-thumb.jpg?v=4",
+      "date_of_birth": "1998-06-02",
+      "timezone": "Asia/Kolkata",
+      "roles": [
+        {
+          "id": 6,
+          "name": "support",
+          "guard_name": "web",
+          "created_at": "2025-10-06T06:36:32.000000Z",
+          "updated_at": "2025-10-06T06:36:32.000000Z",
+          "pivot": {
+            "model_type": "App\\Models\\User",
+            "model_id": 26,
+            "role_id": 6
+          }
+        }
+      ],
+      "permissions": [
+        "create_projects",
+        "view_projects",
+        "edit_projects",
+        "delete_projects",
+        "archive_projects",
+        "create_tasks",
+        "view_tasks",
+        "edit_tasks",
+        "delete_tasks",
+        "assign_tasks",
+        "change_task_status",
+        "create_sprints",
+        "view_sprints",
+        "edit_sprints",
+        "delete_sprints",
+        "manage_users",
+        "view_all_tasks",
+        "view_reports"
+      ]
+    }
+  },
+  "flash": {
+    "message": null,
+    "success": null,
+    "error": null
+  },
+  "projects": [
+    {
+      "id": 1,
+      "name": "Shopify",
+      "key": "spdr-shop",
+      "description": "This project is dedicated exclusively to Shopify-related tasks. Please ensure that only tasks related to Shopify development, app management, store updates, or other Shopify operations are added here. Non-Shopify tasks should be tracked elsewhere.",
+      "color": "#3B82F6",
+      "icon": "🇸",
+      "owner_id": 8,
+      "is_archived": false,
+      "created_at": "2025-10-06T00:31:40.000000Z",
+      "updated_at": "2025-10-06T06:55:20.000000Z"
+    },
+    {
+      "id": 2,
+      "name": "CSV Box",
+      "key": "csvbox",
+      "description": "This project is dedicated exclusively to CSVBox-related tasks. Please ensure that only tasks related to CSVBox development, management, or operations are added here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 8,
+      "is_archived": false,
+      "created_at": "2025-10-06T00:31:55.000000Z",
+      "updated_at": "2025-10-06T06:43:36.000000Z"
+    },
+    {
+      "id": 3,
+      "name": "Spreadr-WIX",
+      "key": "Wix",
+      "description": "This project is dedicated exclusively to Wix-related tasks. Please ensure that only tasks involving Wix development, store updates, or app management are added here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 8,
+      "is_archived": false,
+      "created_at": "2025-10-06T00:32:20.000000Z",
+      "updated_at": "2025-10-06T11:10:36.000000Z"
+    },
+    {
+      "id": 4,
+      "name": "Fyle Box",
+      "key": "FyleBox",
+      "description": "This project is dedicated exclusively to FyleBox-related tasks. Please ensure that only tasks related to FyleBox development, management, or operations are added here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 8,
+      "is_archived": false,
+      "created_at": "2025-10-06T00:32:36.000000Z",
+      "updated_at": "2025-10-06T06:46:33.000000Z"
+    },
+    {
+      "id": 5,
+      "name": "E-commerce Stores",
+      "key": "E-commerce",
+      "description": "This project is dedicated exclusively to E-commerce store-related tasks, including BigCommerce, WooCommerce, and other platforms. Only tasks related to store setup, updates, management, or operations should be added here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 8,
+      "is_archived": false,
+      "created_at": "2025-10-06T00:33:01.000000Z",
+      "updated_at": "2025-10-06T06:47:49.000000Z"
+    },
+    {
+      "id": 7,
+      "name": "Support",
+      "key": "Support",
+      "description": "This project is for all ongoing internal support tasks. Team members should add any task they are currently working on, such as testing, documentation, video creation, and other related activities.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T06:49:49.000000Z",
+      "updated_at": "2025-10-06T06:49:49.000000Z"
+    },
+    {
+      "id": 8,
+      "name": "Miscellaneous / General Tasks",
+      "key": "Miscellane",
+      "description": "This project is for tasks that don’t fit under any specific product or project. Team members can add any general tasks, research, experiments, or activities that need tracking here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T06:51:22.000000Z",
+      "updated_at": "2025-10-06T06:51:22.000000Z"
+    },
+    {
+      "id": 9,
+      "name": "InTrackr",
+      "key": "In-trackr",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 8,
+      "is_archived": false,
+      "created_at": "2025-10-06T09:58:44.000000Z",
+      "updated_at": "2026-04-08T09:20:24.000000Z"
+    },
+    {
+      "id": 10,
+      "name": "Spreadr-shopify",
+      "key": "Spreadr",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:30:28.000000Z",
+      "updated_at": "2025-10-06T11:30:28.000000Z"
+    },
+    {
+      "id": 11,
+      "name": "Connectr-Shopify",
+      "key": "Connectr",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:30:57.000000Z",
+      "updated_at": "2025-10-06T11:30:57.000000Z"
+    },
+    {
+      "id": 12,
+      "name": "The Watchlyst-Shopify",
+      "key": "Watchlyst",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:31:18.000000Z",
+      "updated_at": "2025-10-06T11:31:18.000000Z"
+    },
+    {
+      "id": 13,
+      "name": "Flo-Shopify",
+      "key": "Flo",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:31:43.000000Z",
+      "updated_at": "2025-10-06T11:31:43.000000Z"
+    },
+    {
+      "id": 14,
+      "name": "Neo-Shopify",
+      "key": "Neo",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:31:59.000000Z",
+      "updated_at": "2025-10-06T11:31:59.000000Z"
+    },
+    {
+      "id": 15,
+      "name": "Exporter-Shopify",
+      "key": "Exporter",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:32:15.000000Z",
+      "updated_at": "2025-10-06T11:32:15.000000Z"
+    },
+    {
+      "id": 16,
+      "name": "Prime-Shopify",
+      "key": "Prime",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:32:28.000000Z",
+      "updated_at": "2025-10-06T11:32:28.000000Z"
+    },
+    {
+      "id": 17,
+      "name": "Dual-Shopify",
+      "key": "Dual",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:34:15.000000Z",
+      "updated_at": "2025-10-06T11:34:15.000000Z"
+    },
+    {
+      "id": 18,
+      "name": "Duplicate SKU Sync-Shopify",
+      "key": "Duplicate",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:34:36.000000Z",
+      "updated_at": "2025-10-06T11:34:36.000000Z"
+    },
+    {
+      "id": 19,
+      "name": "Sleek-Shopify",
+      "key": "Sleek",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:34:51.000000Z",
+      "updated_at": "2025-10-06T11:34:51.000000Z"
+    },
+    {
+      "id": 20,
+      "name": "Clever-Shopify",
+      "key": "Clever",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:35:04.000000Z",
+      "updated_at": "2025-10-06T11:35:04.000000Z"
+    },
+    {
+      "id": 21,
+      "name": "Shipr-Shopify",
+      "key": "Shipr",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:35:17.000000Z",
+      "updated_at": "2025-10-06T11:35:17.000000Z"
+    },
+    {
+      "id": 22,
+      "name": "Smart-Shopify",
+      "key": "Smart",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:35:34.000000Z",
+      "updated_at": "2025-10-06T11:35:34.000000Z"
+    },
+    {
+      "id": 23,
+      "name": "Robo-Shopify",
+      "key": "Robo",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:35:47.000000Z",
+      "updated_at": "2025-10-06T11:35:47.000000Z"
+    },
+    {
+      "id": 24,
+      "name": "Pro-Shopify",
+      "key": "Pro",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:36:01.000000Z",
+      "updated_at": "2025-10-06T11:36:01.000000Z"
+    },
+    {
+      "id": 25,
+      "name": "Outlink-Shopify",
+      "key": "Outlink",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:50:35.000000Z",
+      "updated_at": "2025-10-06T11:50:35.000000Z"
+    },
+    {
+      "id": 26,
+      "name": "Linkr-Shopify",
+      "key": "Linkr",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:51:16.000000Z",
+      "updated_at": "2025-10-06T11:51:16.000000Z"
+    },
+    {
+      "id": 27,
+      "name": "Spreadr-BigCommerce",
+      "key": "Spreadr-BC",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:51:58.000000Z",
+      "updated_at": "2025-10-06T11:53:55.000000Z"
+    },
+    {
+      "id": 28,
+      "name": "Spreadr- WooCommerce",
+      "key": "Spreadr-WC",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:52:14.000000Z",
+      "updated_at": "2025-10-06T11:54:34.000000Z"
+    },
+    {
+      "id": 29,
+      "name": "Supr Badge- BigCommerce",
+      "key": "Supr",
+      "description": null,
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-06T11:53:14.000000Z",
+      "updated_at": "2025-10-06T11:55:04.000000Z"
+    },
+    {
+      "id": 30,
+      "name": "RoadMap",
+      "key": "roadmap",
+      "description": "This project is dedicated exclusively to RoadMap-related tasks. Please ensure that only tasks related to RoadMap development, management, or operations are added here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 24,
+      "is_archived": false,
+      "created_at": "2025-10-09T15:38:59.000000Z",
+      "updated_at": "2025-10-09T15:38:59.000000Z"
+    },
+    {
+      "id": 31,
+      "name": "Reorder - Shopify",
+      "key": "ReorderS",
+      "description": "Shopify Reorder App that allows customers to easily reorder previously purchased items directly from their storefront, product, and thank-you, order pages.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 7,
+      "is_archived": false,
+      "created_at": "2025-10-16T06:13:13.000000Z",
+      "updated_at": "2025-10-16T06:13:13.000000Z"
+    },
+    {
+      "id": 32,
+      "name": "WIX Price Editor",
+      "key": "Wix_Price",
+      "description": "This project is dedicated exclusively to Wix-related tasks. Please ensure that only tasks involving Wix development, store updates, or app management are added here.",
+      "color": "#3B82F6",
+      "icon": null,
+      "owner_id": 27,
+      "is_archived": false,
+      "created_at": "2025-12-02T09:29:20.000000Z",
+      "updated_at": "2025-12-02T09:29:20.000000Z"
+    },
+    {
+      "id": 33,
+      "name": "Bolt-Shopify",
+      "key": "Bolt",
+      "description": null,
+      "color": "#e82c2c",
+      "icon": null,
+      "owner_id": 9,
+      "is_archived": false,
+      "created_at": "2026-02-02T07:28:32.000000Z",
+      "updated_at": "2026-02-02T07:28:32.000000Z"
+    }
+  ],
+  "labels": [
+    {
+      "id": 1,
+      "name": "Feature",
+      "color": "#3b82f6",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 2,
+      "name": "Enhancement",
+      "color": "#10b981",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 3,
+      "name": "Bug",
+      "color": "#ef4444",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 4,
+      "name": "Refactor",
+      "color": "#f59e0b",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 5,
+      "name": "Tech Debt",
+      "color": "#f97316",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 6,
+      "name": "UI/UX",
+      "color": "#8b5cf6",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 7,
+      "name": "Accessibility",
+      "color": "#06b6d4",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 8,
+      "name": "Documentation",
+      "color": "#84cc16",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    },
+    {
+      "id": 9,
+      "name": "Testing/QA",
+      "color": "#ec4899",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z",
+      "project": null
+    }
+  ],
+  "globalLabels": [
+    {
+      "id": 1,
+      "name": "Feature",
+      "color": "#3b82f6",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 2,
+      "name": "Enhancement",
+      "color": "#10b981",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 3,
+      "name": "Bug",
+      "color": "#ef4444",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 4,
+      "name": "Refactor",
+      "color": "#f59e0b",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 5,
+      "name": "Tech Debt",
+      "color": "#f97316",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 6,
+      "name": "UI/UX",
+      "color": "#8b5cf6",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 7,
+      "name": "Accessibility",
+      "color": "#06b6d4",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 8,
+      "name": "Documentation",
+      "color": "#84cc16",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    },
+    {
+      "id": 9,
+      "name": "Testing/QA",
+      "color": "#ec4899",
+      "project_id": null,
+      "is_global": true,
+      "created_at": "2025-10-07T11:38:55.000000Z",
+      "updated_at": "2025-10-07T11:38:55.000000Z"
+    }
+  ],
+  "users": [
+    {
+      "id": 19,
+      "name": "Aniket Rane"
+    },
+    {
+      "id": 27,
+      "name": "Ankit Kothari"
+    },
+    {
+      "id": 7,
+      "name": "Ankit Mane"
+    },
+    {
+      "id": 32,
+      "name": "Ankit Vishwakarma"
+    },
+    {
+      "id": 10,
+      "name": "Bhakti\tPatil"
+    },
+    {
+      "id": 26,
+      "name": "Gaurav Salvi"
+    },
+    {
+      "id": 14,
+      "name": "Ishwar Asolkar"
+    },
+    {
+      "id": 30,
+      "name": "Juhee"
+    },
+    {
+      "id": 25,
+      "name": "Lalit Mendadkar"
+    },
+    {
+      "id": 12,
+      "name": "Mohammed Sunasara"
+    },
+    {
+      "id": 11,
+      "name": "Nehal\tWagnak"
+    },
+    {
+      "id": 15,
+      "name": "Nikita Yadav"
+    },
+    {
+      "id": 4,
+      "name": "Pawan More"
+    },
+    {
+      "id": 24,
+      "name": "Prathamesh  Gaonkar"
+    },
+    {
+      "id": 16,
+      "name": "Riddhi Sawant"
+    },
+    {
+      "id": 28,
+      "name": "Rupali Maru"
+    },
+    {
+      "id": 9,
+      "name": "Rushabh\tKothari"
+    },
+    {
+      "id": 18,
+      "name": "Samiran Waghmare"
+    },
+    {
+      "id": 22,
+      "name": "Sangeeta Patel"
+    },
+    {
+      "id": 23,
+      "name": "Sayali Patil"
+    },
+    {
+      "id": 13,
+      "name": "Shivam Sharma"
+    },
+    {
+      "id": 20,
+      "name": "Sumit Yewale"
+    },
+    {
+      "id": 31,
+      "name": "Sweta"
+    },
+    {
+      "id": 8,
+      "name": "Tejas Sangoi"
+    }
+  ],
+  "qaAssigneeOptions": [
+    {
+      "id": 30,
+      "name": "Juhee",
+      "role_tier": "tester"
+    },
+    {
+      "id": 13,
+      "name": "Shivam Sharma",
+      "role_tier": "tester"
+    },
+    {
+      "id": 26,
+      "name": "Gaurav Salvi",
+      "role_tier": "support"
+    },
+    {
+      "id": 25,
+      "name": "Lalit Mendadkar",
+      "role_tier": "support"
+    },
+    {
+      "id": 24,
+      "name": "Prathamesh  Gaonkar",
+      "role_tier": "support"
+    },
+    {
+      "id": 28,
+      "name": "Rupali Maru",
+      "role_tier": "support"
+    },
+    {
+      "id": 31,
+      "name": "Sweta",
+      "role_tier": "support"
+    },
+    {
+      "id": 19,
+      "name": "Aniket Rane",
+      "role_tier": "manager"
+    },
+    {
+      "id": 27,
+      "name": "Ankit Kothari",
+      "role_tier": "manager"
+    },
+    {
+      "id": 7,
+      "name": "Ankit Mane",
+      "role_tier": "manager"
+    },
+    {
+      "id": 32,
+      "name": "Ankit Vishwakarma",
+      "role_tier": "other"
+    },
+    {
+      "id": 10,
+      "name": "Bhakti\tPatil",
+      "role_tier": "other"
+    },
+    {
+      "id": 14,
+      "name": "Ishwar Asolkar",
+      "role_tier": "other"
+    },
+    {
+      "id": 12,
+      "name": "Mohammed Sunasara",
+      "role_tier": "other"
+    },
+    {
+      "id": 11,
+      "name": "Nehal\tWagnak",
+      "role_tier": "other"
+    },
+    {
+      "id": 15,
+      "name": "Nikita Yadav",
+      "role_tier": "other"
+    },
+    {
+      "id": 4,
+      "name": "Pawan More",
+      "role_tier": "other"
+    },
+    {
+      "id": 16,
+      "name": "Riddhi Sawant",
+      "role_tier": "other"
+    },
+    {
+      "id": 9,
+      "name": "Rushabh\tKothari",
+      "role_tier": "other"
+    },
+    {
+      "id": 18,
+      "name": "Samiran Waghmare",
+      "role_tier": "other"
+    },
+    {
+      "id": 22,
+      "name": "Sangeeta Patel",
+      "role_tier": "other"
+    },
+    {
+      "id": 23,
+      "name": "Sayali Patil",
+      "role_tier": "other"
+    },
+    {
+      "id": 20,
+      "name": "Sumit Yewale",
+      "role_tier": "other"
+    },
+    {
+      "id": 8,
+      "name": "Tejas Sangoi",
+      "role_tier": "other"
+    }
+  ],
+  "initialProjectId": null
+}

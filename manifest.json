@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Intrackr AI Task Builder",
+  "version": "1.0.0",
+  "description": "Create detailed Intrackr developer tasks from short issue descriptions.",
+  "permissions": ["activeTab", "storage", "cookies", "scripting"],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost:3000/*",
+    "https://intrackr-ai-task-builder.onrender.com/*",
+    "https://intrackr.thalia-apps.com/*",
+    "https://intrackr.thalia-apps.com/"
+  ],
+  "action": {
+    "default_title": "Intrackr AI Task Builder"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon-new.png",
+    "48": "icon-new.png",
+    "128": "icon-new.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"]
+    }
+  ]
+}

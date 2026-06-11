@@ -1,0 +1,10 @@
+{
+  "name": "intrackr-ai-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension and backend for creating Intrackr tasks with OpenAI.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --use-system-ca server.js",
+    "check": "node --check server.js && node --check background.js && node --check content.js"
+  }
+}
