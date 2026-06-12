@@ -100,10 +100,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
 
           const projects = pageData.props?.projects || [];
-          if (projects.length > 0) {
+          const users = pageData.props?.users || [];
+          const qaAssignees = pageData.props?.qaAssigneeOptions || [];
+          if (projects.length > 0 || users.length > 0 || qaAssignees.length > 0) {
             sendResponse({
               success: true,
-              projects: projects.map(p => ({ id: p.id, name: p.name || p.title }))
+              projects: projects.map(p => ({ id: p.id, name: p.name || p.title })),
+              users: users.map(u => ({ id: u.id, name: u.name })),
+              qaAssignees: qaAssignees.map(q => ({ id: q.id, name: q.name }))
             });
             return;
           }
@@ -198,6 +202,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           formData.append("description", finalDescription);
           if (payload.project_id) {
             formData.append("project_id", payload.project_id);
+          }
+          if (payload.user_id) {
+            formData.append("user_id", payload.user_id);
+          }
+          if (payload.assignee_id) {
+            formData.append("assignee_id", payload.assignee_id);
+          }
+          if (payload.assigned_to) {
+            formData.append("assigned_to", payload.assigned_to);
+          }
+          if (payload.qa_assignee_id) {
+            formData.append("qa_assignee_id", payload.qa_assignee_id);
+          }
+          if (payload.qa_user_id) {
+            formData.append("qa_user_id", payload.qa_user_id);
           }
           formData.append("type", payload.type || "Bug");
           formData.append("priority", payload.priority || "p3");

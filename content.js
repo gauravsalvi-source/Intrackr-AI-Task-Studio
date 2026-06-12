@@ -44,6 +44,11 @@ root.innerHTML = `
       <select id="intrackr-ai-project" title="Select Project"><option value="">Loading projects...</option></select>
 
       <div class="toolbar">
+        <select id="intrackr-ai-assignee" title="Assignee"><option value="">Assignee</option></select>
+        <select id="intrackr-ai-qa-assignee" title="QA Assignee"><option value="">QA Assignee</option></select>
+      </div>
+
+      <div class="toolbar">
         <select id="intrackr-ai-priority" title="Priority">
           <option value="P1 - Critical">P1 - Critical</option>
           <option value="P2 - High">P2 - High</option>
@@ -106,6 +111,8 @@ const header = document.getElementById("intrackr-ai-header");
 const launcher = document.getElementById("intrackr-ai-launcher");
 const input = document.getElementById("intrackr-ai-input");
 const projectInput = document.getElementById("intrackr-ai-project");
+const assigneeInput = document.getElementById("intrackr-ai-assignee");
+const qaAssigneeInput = document.getElementById("intrackr-ai-qa-assignee");
 const titleInput = document.getElementById("intrackr-ai-title");
 const minimizeButton = document.getElementById("intrackr-ai-minimize");
 const output = document.getElementById("intrackr-ai-output");
@@ -135,8 +142,8 @@ if (isOnCreateTaskPage) {
   insertBtn.style.display = "none";
 }
 
-// Fetch InTrackr projects for project dropdown on load
-fetchProjectsDropdown();
+// Fetch InTrackr projects, users, and QA assignees for dropdowns on load
+fetchDropdownData();
 
 // Listen for message from background script to toggle sidebar or capture screenshot
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -198,43 +205,147 @@ const STATIC_PROJECTS = [
   {"id": "33", "name": "Bolt-Shopify"}
 ];
 
-function fetchProjectsDropdown() {
-  const select = document.getElementById("intrackr-ai-project");
-  if (!select) return;
-  
-  const prevVal = select.value;
-  select.innerHTML = "";
-  
-  const defOpt = document.createElement("option");
-  defOpt.value = "";
-  defOpt.textContent = "Select a project *";
-  select.appendChild(defOpt);
-  
-  // Try loading real projects scraped from InTrackr backend first
+const STATIC_USERS = [
+  {"id": "19", "name": "Aniket Rane"},
+  {"id": "27", "name": "Ankit Kothari"},
+  {"id": "7", "name": "Ankit Mane"},
+  {"id": "32", "name": "Ankit Vishwakarma"},
+  {"id": "10", "name": "Bhakti Patil"},
+  {"id": "26", "name": "Gaurav Salvi"},
+  {"id": "14", "name": "Ishwar Asolkar"},
+  {"id": "30", "name": "Juhee"},
+  {"id": "25", "name": "Lalit Mendadkar"},
+  {"id": "12", "name": "Mohammed Sunasara"},
+  {"id": "11", "name": "Nehal Wagnak"},
+  {"id": "15", "name": "Nikita Yadav"},
+  {"id": "4", "name": "Pawan More"},
+  {"id": "24", "name": "Prathamesh Gaonkar"},
+  {"id": "16", "name": "Riddhi Sawant"},
+  {"id": "28", "name": "Rupali Maru"},
+  {"id": "9", "name": "Rushabh Kothari"},
+  {"id": "18", "name": "Samiran Waghmare"},
+  {"id": "22", "name": "Sangeeta Patel"},
+  {"id": "23", "name": "Sayali Patil"},
+  {"id": "13", "name": "Shivam Sharma"},
+  {"id": "20", "name": "Sumit Yewale"},
+  {"id": "31", "name": "Sweta"},
+  {"id": "8", "name": "Tejas Sangoi"}
+];
+
+function cleanName(name) {
+  return String(name || '').replace(/\s+/g, ' ').trim();
+}
+
+function fetchDropdownData() {
+  const projectSelect = document.getElementById("intrackr-ai-project");
+  const assigneeSelect = document.getElementById("intrackr-ai-assignee");
+  const qaAssigneeSelect = document.getElementById("intrackr-ai-qa-assignee");
+
+  const prevProj = projectSelect ? projectSelect.value : "";
+  const prevAssignee = assigneeSelect ? assigneeSelect.value : "";
+  const prevQa = qaAssigneeSelect ? qaAssigneeSelect.value : "";
+
+  if (projectSelect) {
+    projectSelect.innerHTML = "";
+    const defOpt = document.createElement("option");
+    defOpt.value = "";
+    defOpt.textContent = "Select a project *";
+    projectSelect.appendChild(defOpt);
+  }
+
+  if (assigneeSelect) {
+    assigneeSelect.innerHTML = "";
+    const defOpt = document.createElement("option");
+    defOpt.value = "";
+    defOpt.textContent = "Assignee";
+    assigneeSelect.appendChild(defOpt);
+  }
+
+  if (qaAssigneeSelect) {
+    qaAssigneeSelect.innerHTML = "";
+    const defOpt = document.createElement("option");
+    defOpt.value = "";
+    defOpt.textContent = "QA Assignee";
+    qaAssigneeSelect.appendChild(defOpt);
+  }
+
   chrome.runtime.sendMessage({ action: "getProjects" }, (response) => {
-    if (response && response.success && response.projects && response.projects.length > 0) {
-      response.projects.forEach(p => {
-        if (![...select.options].some(o => o.value == p.id)) {
-          const opt = document.createElement("option");
-          opt.value = p.id;
-          opt.textContent = p.name;
-          select.appendChild(opt);
-        }
-      });
-    } else {
-      // Fallback to static project list if scraping fails
-      STATIC_PROJECTS.forEach(p => {
-        if (![...select.options].some(o => o.value == p.id)) {
-          const opt = document.createElement("option");
-          opt.value = p.id;
-          opt.textContent = p.name;
-          select.appendChild(opt);
-        }
-      });
+    // Populate projects
+    if (projectSelect) {
+      if (response && response.success && response.projects && response.projects.length > 0) {
+        response.projects.forEach(p => {
+          if (![...projectSelect.options].some(o => o.value == p.id)) {
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.name;
+            projectSelect.appendChild(opt);
+          }
+        });
+      } else {
+        STATIC_PROJECTS.forEach(p => {
+          if (![...projectSelect.options].some(o => o.value == p.id)) {
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.name;
+            projectSelect.appendChild(opt);
+          }
+        });
+      }
+      if (prevProj && [...projectSelect.options].some(o => o.value == prevProj)) {
+        projectSelect.value = prevProj;
+      }
     }
-    
-    if (prevVal && [...select.options].some(o => o.value == prevVal)) {
-      select.value = prevVal;
+
+    // Populate assignees
+    if (assigneeSelect) {
+      if (response && response.success && response.users && response.users.length > 0) {
+        response.users.forEach(u => {
+          if (![...assigneeSelect.options].some(o => o.value == u.id)) {
+            const opt = document.createElement("option");
+            opt.value = u.id;
+            opt.textContent = cleanName(u.name);
+            assigneeSelect.appendChild(opt);
+          }
+        });
+      } else {
+        STATIC_USERS.forEach(u => {
+          if (![...assigneeSelect.options].some(o => o.value == u.id)) {
+            const opt = document.createElement("option");
+            opt.value = u.id;
+            opt.textContent = cleanName(u.name);
+            assigneeSelect.appendChild(opt);
+          }
+        });
+      }
+      if (prevAssignee && [...assigneeSelect.options].some(o => o.value == prevAssignee)) {
+        assigneeSelect.value = prevAssignee;
+      }
+    }
+
+    // Populate QA assignees
+    if (qaAssigneeSelect) {
+      if (response && response.success && response.qaAssignees && response.qaAssignees.length > 0) {
+        response.qaAssignees.forEach(q => {
+          if (![...qaAssigneeSelect.options].some(o => o.value == q.id)) {
+            const opt = document.createElement("option");
+            opt.value = q.id;
+            opt.textContent = cleanName(q.name);
+            qaAssigneeSelect.appendChild(opt);
+          }
+        });
+      } else {
+        STATIC_USERS.forEach(u => {
+          if (![...qaAssigneeSelect.options].some(o => o.value == u.id)) {
+            const opt = document.createElement("option");
+            opt.value = u.id;
+            opt.textContent = cleanName(u.name);
+            qaAssigneeSelect.appendChild(opt);
+          }
+        });
+      }
+      if (prevQa && [...qaAssigneeSelect.options].some(o => o.value == prevQa)) {
+        qaAssigneeSelect.value = prevQa;
+      }
     }
   });
 }
@@ -474,6 +585,10 @@ async function saveTaskToInTrackr() {
   const description = output.value.trim();
   const projectSelect = document.getElementById("intrackr-ai-project");
   const projectId = projectSelect ? projectSelect.value : "";
+  const assigneeSelect = document.getElementById("intrackr-ai-assignee");
+  const assigneeId = assigneeSelect ? assigneeSelect.value : "";
+  const qaAssigneeSelect = document.getElementById("intrackr-ai-qa-assignee");
+  const qaAssigneeId = qaAssigneeSelect ? qaAssigneeSelect.value : "";
   
   const priorityMap = {
     "P1 - Critical": "p1",
@@ -507,7 +622,12 @@ async function saveTaskToInTrackr() {
     priority,
     status: "todo",
     type,
-    images: selectedImages
+    images: selectedImages,
+    user_id: assigneeId,
+    assignee_id: assigneeId,
+    assigned_to: assigneeId,
+    qa_assignee_id: qaAssigneeId,
+    qa_user_id: qaAssigneeId
   };
 
   chrome.runtime.sendMessage({ action: "createTaskInTrackr", payload }, (response) => {
@@ -957,11 +1077,26 @@ async function fillIntrackrForm() {
   const priorityField = findFieldAfterLabel(/^priority$/, "select, input:not([type='hidden']), [role='combobox']") ||
     findField([/priority/]);
   const typeField = findField([/\btype\b/, /category/]);
+
+  const assigneeField = findFieldAfterLabel(/assignee|assign to/i, "select, input:not([type='hidden']), [role='combobox']") ||
+    findField([/assignee/, /assign to/, /assign_id/, /user_id/]);
+  const qaAssigneeField = findFieldAfterLabel(/qa assignee|qa/i, "select, input:not([type='hidden']), [role='combobox']") ||
+    findField([/qa assignee/, /qa_assignee/, /qa_user/, /qa_id/]);
+
   const titleValue = titleInput.value.trim() || generatedTask.title || "";
   const descriptionValue = output.value.trim() || taskToText(generatedTask);
   const projectValue = projectInput.value.trim();
   const priorityValue = document.getElementById("intrackr-ai-priority").value;
   const typeValue = document.getElementById("intrackr-ai-type").value;
+
+  const assigneeSelect = document.getElementById("intrackr-ai-assignee");
+  const assigneeOption = assigneeSelect && assigneeSelect.selectedIndex >= 0 ? assigneeSelect.options[assigneeSelect.selectedIndex] : null;
+  const assigneeName = assigneeOption && assigneeOption.value ? assigneeOption.textContent : "";
+
+  const qaAssigneeSelect = document.getElementById("intrackr-ai-qa-assignee");
+  const qaAssigneeOption = qaAssigneeSelect && qaAssigneeSelect.selectedIndex >= 0 ? qaAssigneeSelect.options[qaAssigneeSelect.selectedIndex] : null;
+  const qaAssigneeName = qaAssigneeOption && qaAssigneeOption.value ? qaAssigneeOption.textContent : "";
+
   const selectedCategory = selectTaskCategory(typeValue);
 
   let finalDescription = descriptionValue;
@@ -999,6 +1134,8 @@ async function fillIntrackrForm() {
   if (projectField && projectValue) setFieldValue(projectField, projectValue);
   if (priorityField) setFieldValue(priorityField, priorityValue);
   if (typeField) setFieldValue(typeField, typeValue || generatedTask.type || "");
+  if (assigneeField && assigneeName) setFieldValue(assigneeField, assigneeName);
+  if (qaAssigneeField && qaAssigneeName) setFieldValue(qaAssigneeField, qaAssigneeName);
 
   if (selectedImages.length > 0) {
     const fileField = findPageFileInput();
@@ -1043,6 +1180,8 @@ document.getElementById("intrackr-ai-copy").addEventListener("click", async () =
 document.getElementById("intrackr-ai-reset").addEventListener("click", () => {
   input.value = "";
   projectInput.value = "";
+  if (assigneeInput) assigneeInput.value = "";
+  if (qaAssigneeInput) qaAssigneeInput.value = "";
   titleInput.value = "";
   output.value = "";
   generatedTask = null;
