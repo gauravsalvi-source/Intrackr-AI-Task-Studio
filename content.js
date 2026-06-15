@@ -681,7 +681,26 @@ function openAnnotationEditor(imgDataUrl) {
   });
   
   document.getElementById("anno-act-save").addEventListener("click", () => {
-    const annotatedBase64 = canvas.toDataURL("image/jpeg", 0.9);
+    const maxDim = 1200;
+    let targetW = canvas.width;
+    let targetH = canvas.height;
+    if (targetW > maxDim || targetH > maxDim) {
+      if (targetW > targetH) {
+        targetH = Math.round((targetH * maxDim) / targetW);
+        targetW = maxDim;
+      } else {
+        targetW = Math.round((targetW * maxDim) / targetH);
+        targetH = maxDim;
+      }
+    }
+
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = targetW;
+    tempCanvas.height = targetH;
+    const tempCtx = tempCanvas.getContext("2d");
+    tempCtx.drawImage(canvas, 0, 0, targetW, targetH);
+
+    const annotatedBase64 = tempCanvas.toDataURL("image/jpeg", 0.85);
     selectedImages.push(annotatedBase64);
     renderPreviews();
     overlay.remove();
