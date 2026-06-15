@@ -1,6 +1,14 @@
 (() => {
 const API_BASE = "https://intrackr-ai-task-studio-1.onrender.com";
 
+function isContextValid() {
+  try {
+    return !!(typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id);
+  } catch (e) {
+    return false;
+  }
+}
+
 const root = document.createElement("div");
 root.innerHTML = `
   <aside id="intrackr-ai-sidebar" aria-label="Intrackr AI Task Builder">
@@ -238,6 +246,7 @@ const STATIC_USERS = [
 ];
 
 function saveDraft() {
+  if (!isContextValid()) return;
   const draft = {
     summary: input.value,
     title: titleInput.value,
@@ -253,6 +262,7 @@ function saveDraft() {
 }
 
 function loadDraft() {
+  if (!isContextValid()) return;
   chrome.storage.local.get(["intrackr_ai_task_draft"], (result) => {
     const draft = result.intrackr_ai_task_draft;
     if (!draft) return;
@@ -277,6 +287,7 @@ function loadDraft() {
 }
 
 function clearDraft() {
+  if (!isContextValid()) return;
   chrome.storage.local.remove("intrackr_ai_task_draft");
 }
 
@@ -315,6 +326,50 @@ function fetchDropdownData() {
     defOpt.value = "";
     defOpt.textContent = "QA Assignee";
     qaAssigneeSelect.appendChild(defOpt);
+  }
+
+  if (!isContextValid()) {
+    if (projectSelect) {
+      STATIC_PROJECTS.forEach(p => {
+        if (![...projectSelect.options].some(o => o.value == p.id)) {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = p.name;
+          projectSelect.appendChild(opt);
+        }
+      });
+      if (prevProj && [...projectSelect.options].some(o => o.value == prevProj)) {
+        projectSelect.value = prevProj;
+      }
+    }
+    if (assigneeSelect) {
+      STATIC_USERS.forEach(u => {
+        if (![...assigneeSelect.options].some(o => o.value == u.id)) {
+          const opt = document.createElement("option");
+          opt.value = u.id;
+          opt.textContent = cleanName(u.name);
+          assigneeSelect.appendChild(opt);
+        }
+      });
+      if (prevAssignee && [...assigneeSelect.options].some(o => o.value == prevAssignee)) {
+        assigneeSelect.value = prevAssignee;
+      }
+    }
+    if (qaAssigneeSelect) {
+      STATIC_USERS.forEach(u => {
+        if (![...qaAssigneeSelect.options].some(o => o.value == u.id)) {
+          const opt = document.createElement("option");
+          opt.value = u.id;
+          opt.textContent = cleanName(u.name);
+          qaAssigneeSelect.appendChild(opt);
+        }
+      });
+      if (prevQa && [...qaAssigneeSelect.options].some(o => o.value == prevQa)) {
+        qaAssigneeSelect.value = prevQa;
+      }
+      loadDraft();
+    }
+    return;
   }
 
   chrome.runtime.sendMessage({ action: "getProjects" }, (response) => {
@@ -403,6 +458,10 @@ function fetchDropdownData() {
 
 async function captureScreenshot() {
   return new Promise((resolve, reject) => {
+    if (!isContextValid()) {
+      reject(new Error("Extension context invalidated. Please reload the webpage."));
+      return;
+    }
     chrome.runtime.sendMessage({ action: "captureVisibleTab" }, (response) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
@@ -443,6 +502,10 @@ async function autoCaptureScreenshot() {
 
 async function captureDesktopScreen() {
   return new Promise((resolve, reject) => {
+    if (!isContextValid()) {
+      reject(new Error("Extension context invalidated. Please reload the webpage."));
+      return;
+    }
     chrome.runtime.sendMessage({ action: "chooseDesktopMedia" }, async (response) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
@@ -875,6 +938,12 @@ async function saveTaskToInTrackr() {
     qa_assignee_id: qaAssigneeId,
     qa_user_id: qaAssigneeId
   };
+
+  if (!isContextValid()) {
+    setStatus("Extension context invalidated. Please reload the webpage to save to InTrackr.", true);
+    saveDirectBtn.disabled = false;
+    return;
+  }
 
   chrome.runtime.sendMessage({ action: "createTaskInTrackr", payload }, (response) => {
     saveDirectBtn.disabled = false;
