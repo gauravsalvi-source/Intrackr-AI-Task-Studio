@@ -3,7 +3,7 @@
   "name": "Intrackr AI Task Builder",
   "version": "1.0.0",
   "description": "Create detailed Intrackr developer tasks from short issue descriptions.",
-  "permissions": ["activeTab", "storage", "cookies", "scripting"],
+  "permissions": ["activeTab", "storage", "cookies", "scripting", "desktopCapture"],
   "host_permissions": [
     "<all_urls>",
     "http://localhost:3000/*",
@@ -18,9 +18,10 @@
     "service_worker": "background.js"
   },
   "icons": {
-    "16": "icon-new.png",
-    "48": "icon-new.png",
-    "128": "icon-new.png"
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
   },
   "content_scripts": [
     {

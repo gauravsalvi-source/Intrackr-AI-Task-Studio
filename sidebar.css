@@ -239,29 +239,52 @@
 }
 
 #intrackr-ai-theme-icon {
-  fill: none;
-  height: 19px;
-  stroke: #667085;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-  width: 19px;
+  fill: none !important;
+  height: 19px !important;
+  stroke: #667085 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-width: 2 !important;
+  width: 19px !important;
+  display: inline-block !important;
+  position: static !important;
+  vertical-align: middle !important;
+}
+
+/* Isolate all SVGs inside the sidebar from host page style leakage */
+#intrackr-ai-sidebar svg {
+  display: inline-block !important;
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  transform: none !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+#intrackr-ai-sidebar svg * {
+  box-sizing: border-box !important;
+  stroke: inherit !important;
+  fill: inherit !important;
+  stroke-width: inherit !important;
 }
 
 #intrackr-ai-theme-icon .sun-shape {
-  display: none;
+  display: none !important;
 }
 
 #intrackr-ai-theme-icon.sun {
-  stroke: #f59e0b;
+  stroke: #f59e0b !important;
 }
 
 #intrackr-ai-theme-icon.sun .moon-shape {
-  display: none;
+  display: none !important;
 }
 
 #intrackr-ai-theme-icon.sun .sun-shape {
-  display: block;
+  display: block !important;
 }
 
 .footer-actions button {
@@ -393,71 +416,84 @@
   }
 }
 
-/* Image Upload Container */
-.image-upload-container {
-  background: var(--intrackr-ai-panel);
-  border: 2px dashed var(--intrackr-ai-border);
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 80px;
-  padding: 12px;
-  position: relative;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+/* Image Upload Container - Force overflow and dimensions isolation */
+#intrackr-ai-image-container.image-upload-container {
+  background: var(--intrackr-ai-panel) !important;
+  border: 2px dashed var(--intrackr-ai-border) !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 80px !important;
+  height: auto !important;
+  max-height: none !important;
+  padding: 12px !important;
+  position: relative !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
 }
 
-.image-upload-container:hover,
-.image-upload-container.drag-over {
-  border-color: var(--intrackr-ai-accent);
-  background: var(--intrackr-ai-button-hover);
+#intrackr-ai-image-container.image-upload-container:hover,
+#intrackr-ai-image-container.image-upload-container.drag-over {
+  border-color: var(--intrackr-ai-accent) !important;
+  background: var(--intrackr-ai-button-hover) !important;
 }
 
 .upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: var(--intrackr-ai-muted);
-  font-size: 13px;
-  pointer-events: none;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: var(--intrackr-ai-muted) !important;
+  font-size: 13px !important;
+  pointer-events: none !important;
+  height: auto !important;
+  width: auto !important;
 }
 
 .upload-icon {
-  stroke: var(--intrackr-ai-muted);
+  stroke: var(--intrackr-ai-muted) !important;
+  display: inline-block !important;
+  position: static !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  vertical-align: middle !important;
 }
 
-.image-upload-container:hover .upload-icon,
-.image-upload-container:hover .upload-placeholder,
-.image-upload-container.drag-over .upload-icon,
-.image-upload-container.drag-over .upload-placeholder {
-  color: var(--intrackr-ai-accent);
-  stroke: var(--intrackr-ai-accent);
+#intrackr-ai-image-container:hover .upload-icon,
+#intrackr-ai-image-container:hover .upload-placeholder,
+#intrackr-ai-image-container.drag-over .upload-icon,
+#intrackr-ai-image-container.drag-over .upload-placeholder {
+  color: var(--intrackr-ai-accent) !important;
+  stroke: var(--intrackr-ai-accent) !important;
 }
 
 /* Image Preview */
 .image-preview {
-  position: relative;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  position: relative !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
 .image-preview img {
-  max-width: 100%;
-  max-height: 150px;
-  border-radius: 6px;
-  object-fit: contain;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 100% !important;
+  max-height: 150px !important;
+  border-radius: 6px !important;
+  object-fit: contain !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
 .image-preview .remove-btn {
-  position: absolute;
-  top: -8px;
-  right: -8px;
+  position: absolute !important;
+  top: -8px !important;
+  right: -8px !important;
   width: 24px !important;
   height: 24px !important;
   border-radius: 50% !important;
@@ -475,33 +511,37 @@
 }
 
 .image-preview .remove-btn:hover {
-  opacity: 0.9;
-  transform: scale(1.05);
+  opacity: 0.9 !important;
+  transform: scale(1.05) !important;
 }
 
 .images-preview-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-  margin-top: 10px;
-  justify-content: flex-start;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin-top: 10px !important;
+  justify-content: flex-start !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 .preview-item {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  border-radius: 6px;
-  border: 1px solid var(--intrackr-ai-border);
-  background: var(--intrackr-ai-panel);
+  position: relative !important;
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--intrackr-ai-border) !important;
+  background: var(--intrackr-ai-panel) !important;
+  display: block !important;
+  box-sizing: border-box !important;
 }
 
 .preview-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 5px;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 5px !important;
 }
 
 .preview-item .remove-btn {
@@ -527,7 +567,7 @@
 
 .preview-item .remove-btn:hover {
   background: #d32f2f !important;
-  transform: scale(1.1);
+  transform: scale(1.1) !important;
 }
 
 /* Annotation Tool CSS Overlay */
@@ -677,4 +717,74 @@
   border-top: 1px solid var(--intrackr-ai-border);
   letter-spacing: 0.3px;
   opacity: 0.8;
+}
+
+/* Console Logs Container */
+.console-logs-container {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--intrackr-ai-panel);
+  border: 1px solid var(--intrackr-ai-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.console-logs-container input[type="checkbox"] {
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  cursor: pointer;
+}
+
+.console-logs-container label {
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--intrackr-ai-text) !important;
+  text-transform: none !important;
+  user-select: none;
+  margin: 0 !important;
+}
+
+.logs-badge {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+#intrackr-ai-sidebar.dark .logs-badge {
+  background: #2b3a52;
+  color: #a9b5c7;
+}
+
+.logs-badge.has-warnings {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+#intrackr-ai-sidebar.dark .logs-badge.has-warnings {
+  background: #451a03;
+  color: #fbbf24;
+}
+
+.logs-badge.has-errors {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+#intrackr-ai-sidebar.dark .logs-badge.has-errors {
+  background: #450a0a;
+  color: #fca5a5;
 }

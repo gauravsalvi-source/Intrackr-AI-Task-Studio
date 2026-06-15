@@ -67,6 +67,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === "chooseDesktopMedia") {
+    chrome.desktopCapture.chooseDesktopMedia(["screen", "window"], sender.tab, (streamId) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ error: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ streamId });
+      }
+    });
+    return true;
+  }
+
   if (request.action === "getProjects") {
     fetch("https://intrackr.thalia-apps.com/tasks/create", {
       method: "GET",

@@ -32,8 +32,11 @@ root.innerHTML = `
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
-          <div class="upload-options" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-            <button id="intrackr-ai-btn-capture" type="button" style="height: 26px; padding: 0 8px; font-size: 11px; margin-bottom: 2px;">📸 Capture Screenshot</button>
+          <div class="upload-options" style="display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: auto;">
+            <div style="display: flex; gap: 4px; justify-content: center; width: 100%;">
+              <button id="intrackr-ai-btn-capture" type="button" style="height: 26px; padding: 0 6px; font-size: 11px; margin-bottom: 2px; pointer-events: auto;" title="Capture webpage viewport">📸 Page Viewport</button>
+              <button id="intrackr-ai-btn-capture-screen" type="button" style="height: 26px; padding: 0 6px; font-size: 11px; margin-bottom: 2px; pointer-events: auto;" title="Capture full screen or specific window (includes DevTools)">🖥️ Screen/DevTools</button>
+            </div>
             <span>or click/drag to upload</span>
           </div>
         </div>
@@ -127,6 +130,8 @@ const previewGrid = document.getElementById("intrackr-ai-images-preview-grid");
 const saveDirectBtn = document.getElementById("intrackr-ai-save-direct");
 const insertBtn = document.getElementById("intrackr-ai-insert");
 const captureBtn = document.getElementById("intrackr-ai-btn-capture");
+const captureScreenBtn = document.getElementById("intrackr-ai-btn-capture-screen");
+
 
 const isOnCreateTaskPage = window.location.href.startsWith("https://intrackr.thalia-apps.com/tasks/create") || (window.location.href.includes("/tasks/") && window.location.href.includes("/edit"));
 
@@ -231,6 +236,49 @@ const STATIC_USERS = [
   {"id": "31", "name": "Sweta"},
   {"id": "8", "name": "Tejas Sangoi"}
 ];
+
+function saveDraft() {
+  const draft = {
+    summary: input.value,
+    title: titleInput.value,
+    description: output.value,
+    images: selectedImages,
+    project: projectInput.value,
+    assignee: assigneeInput ? assigneeInput.value : "",
+    qaAssignee: qaAssigneeInput ? qaAssigneeInput.value : "",
+    priority: document.getElementById("intrackr-ai-priority").value,
+    type: document.getElementById("intrackr-ai-type").value
+  };
+  chrome.storage.local.set({ intrackr_ai_task_draft: draft });
+}
+
+function loadDraft() {
+  chrome.storage.local.get(["intrackr_ai_task_draft"], (result) => {
+    const draft = result.intrackr_ai_task_draft;
+    if (!draft) return;
+    
+    input.value = draft.summary || "";
+    titleInput.value = draft.title || "";
+    output.value = draft.description || "";
+    selectedImages = draft.images || [];
+    
+    if (draft.project && projectInput) projectInput.value = draft.project;
+    if (draft.assignee && assigneeInput) assigneeInput.value = draft.assignee;
+    if (draft.qaAssignee && qaAssigneeInput) qaAssigneeInput.value = draft.qaAssignee;
+    
+    const priorityEl = document.getElementById("intrackr-ai-priority");
+    if (priorityEl && draft.priority) priorityEl.value = draft.priority;
+    
+    const typeEl = document.getElementById("intrackr-ai-type");
+    if (typeEl && draft.type) typeEl.value = draft.type;
+    
+    renderPreviews();
+  });
+}
+
+function clearDraft() {
+  chrome.storage.local.remove("intrackr_ai_task_draft");
+}
 
 function cleanName(name) {
   return String(name || '').replace(/\s+/g, ' ').trim();
@@ -346,6 +394,9 @@ function fetchDropdownData() {
       if (prevQa && [...qaAssigneeSelect.options].some(o => o.value == prevQa)) {
         qaAssigneeSelect.value = prevQa;
       }
+      
+      // Load shared draft storage once dropdowns are populated
+      loadDraft();
     }
   });
 }
@@ -390,8 +441,115 @@ async function autoCaptureScreenshot() {
   }, 150);
 }
 
-function drawArrow(ctx, fromx, fromy, tox, toy) {
-  const headlen = 15;
+async function captureDesktopScreen() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ action: "chooseDesktopMedia" }, async (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      if (!response || !response.streamId) {
+        reject(new Error("Screen/DevTools capture cancelled or failed."));
+        return;
+      }
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: response.streamId,
+              maxWidth: 4000,
+              maxHeight: 4000
+            }
+          }
+        });
+        
+        const video = document.createElement('video');
+        video.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+        document.body.appendChild(video);
+        
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          video.play();
+          
+          let hasCaptured = false;
+          let fallbackTimeout = null;
+          
+          const captureFrame = () => {
+            if (hasCaptured) return;
+            
+            // Wait until the stream has initialized to a reasonable resolution
+            if (video.videoWidth > 640 || fallbackTimeout === null) {
+              hasCaptured = true;
+              if (fallbackTimeout) clearTimeout(fallbackTimeout);
+              
+              const canvas = document.createElement('canvas');
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              
+              const dataUrl = canvas.toDataURL('image/png');
+              
+              // Clean up
+              stream.getTracks().forEach(track => track.stop());
+              video.remove();
+              
+              resolve(dataUrl);
+            } else {
+              // Wait for resize event when Chrome sets the high-res stream
+              video.onresize = () => {
+                captureFrame();
+              };
+            }
+          };
+          
+          // Fallback to capture whatever resolution is negotiated after 800ms
+          fallbackTimeout = setTimeout(() => {
+            fallbackTimeout = null;
+            captureFrame();
+          }, 800);
+          
+          setTimeout(captureFrame, 150);
+        };
+        video.onerror = (e) => {
+          reject(new Error("Video playback error during capture"));
+        };
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
+
+async function autoCaptureDesktopScreen() {
+  setStatus("Prompting for screen/window capture...");
+  
+  // Hide sidebar temporarily for clean capture
+  const prevDisplay = sidebar.style.display;
+  sidebar.style.setProperty("display", "none", "important");
+  if (launcher) launcher.style.setProperty("display", "none", "important");
+  
+  setTimeout(async () => {
+    try {
+      const dataUrl = await captureDesktopScreen();
+      // Restore sidebar
+      sidebar.style.display = prevDisplay;
+      if (launcher) launcher.style.display = "";
+      setStatus("Screen captured. Double-click/drag to draw annotations.");
+      openAnnotationEditor(dataUrl);
+    } catch (e) {
+      sidebar.style.display = prevDisplay;
+      if (launcher) launcher.style.display = "";
+      setStatus("Failed to capture screen: " + e.message, true);
+    }
+  }, 150);
+}
+
+function drawArrow(ctx, fromx, fromy, tox, toy, scale = 1) {
+  const headlen = 15 * scale;
   const dx = tox - fromx;
   const dy = toy - fromy;
   const angle = Math.atan2(dy, dx);
@@ -400,7 +558,7 @@ function drawArrow(ctx, fromx, fromy, tox, toy) {
   ctx.moveTo(fromx, fromy);
   ctx.lineTo(tox, toy);
   ctx.strokeStyle = "#ef4444";
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 4 * scale;
   ctx.stroke();
   
   ctx.beginPath();
@@ -427,6 +585,7 @@ function openAnnotationEditor(imgDataUrl) {
           <button id="anno-tool-brush" class="anno-btn active">✏️ Pen</button>
           <button id="anno-tool-rect" class="anno-btn">⬜ Rectangle</button>
           <button id="anno-tool-arrow" class="anno-btn">➡️ Arrow</button>
+          <button id="anno-tool-crop" class="anno-btn">✂️ Crop</button>
           <button id="anno-tool-clear" class="anno-btn clear">Clear All</button>
         </div>
         <div class="anno-actions">
@@ -445,139 +604,207 @@ function openAnnotationEditor(imgDataUrl) {
   const canvas = document.getElementById("intrackr-anno-canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   
+  let drawing = false;
+  let startX = 0;
+  let startY = 0;
+  let activeTool = "brush"; // brush, rect, arrow, crop
+  
+  let origW = 0;
+  let origH = 0;
+  let w = 0;
+  let h = 0;
+  let scaleFactor = 1;
+  let baseLineWidth = 4;
+  let savedState = null;
+  
   const img = new Image();
   img.crossOrigin = "anonymous";
-  img.src = imgDataUrl;
-  img.onload = () => {
+  
+  function initCanvas() {
     const maxW = window.innerWidth * 0.9;
     const maxH = window.innerHeight * 0.7;
-    let w = img.width;
-    let h = img.height;
+    origW = img.width;
+    origH = img.height;
+    
+    w = origW;
+    h = origH;
     if (w > maxW || h > maxH) {
       const ratio = Math.min(maxW / w, maxH / h);
       w = w * ratio;
       h = h * ratio;
     }
     
-    canvas.width = w;
-    canvas.height = h;
-    ctx.drawImage(img, 0, 0, w, h);
+    canvas.width = origW;
+    canvas.height = origH;
     
-    let drawing = false;
-    let startX = 0;
-    let startY = 0;
-    let activeTool = "brush"; // brush, rect, arrow
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
     
-    // Save state for undo/restores
-    let savedState = ctx.getImageData(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, origW, origH);
     
-    const toolButtons = {
-      brush: document.getElementById("anno-tool-brush"),
-      rect: document.getElementById("anno-tool-rect"),
-      arrow: document.getElementById("anno-tool-arrow")
-    };
+    scaleFactor = origW / w;
+    baseLineWidth = 4 * scaleFactor;
     
-    Object.keys(toolButtons).forEach(t => {
-      toolButtons[t].addEventListener("click", () => {
-        Object.values(toolButtons).forEach(b => b.classList.remove("active"));
-        toolButtons[t].classList.add("active");
-        activeTool = t;
-      });
-    });
-    
-    document.getElementById("anno-tool-clear").addEventListener("click", () => {
-      ctx.drawImage(img, 0, 0, w, h);
-      savedState = ctx.getImageData(0, 0, w, h);
-    });
-    
-    document.getElementById("anno-act-cancel").addEventListener("click", () => {
-      overlay.remove();
-      sidebar.hidden = false;
-      launcher.hidden = true;
-      setSidebarMinimized(false);
-    });
-    
-    document.getElementById("anno-act-save").addEventListener("click", () => {
-      const annotatedBase64 = canvas.toDataURL("image/jpeg", 0.85);
-      selectedImages.push(annotatedBase64);
-      renderPreviews();
-      uploadPlaceholder.hidden = true;
-      overlay.remove();
-      sidebar.hidden = false;
-      launcher.hidden = true;
-      setSidebarMinimized(false);
-      setStatus("Annotated screenshot added successfully.");
-    });
-    
-    // Helper to get correctly scaled canvas coordinates
-    function getMousePos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
-      };
-    }
-
-    // Drawing event listeners
-    canvas.addEventListener("mousedown", (e) => {
-      drawing = true;
-      const pos = getMousePos(e);
-      startX = pos.x;
-      startY = pos.y;
-      
-      // Cache canvas state before drawing active shape
-      savedState = ctx.getImageData(0, 0, w, h);
-      
-      if (activeTool === "brush") {
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.strokeStyle = "#ef4444";
-        ctx.lineWidth = 4;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-      }
-    });
-    
-    canvas.addEventListener("mousemove", (e) => {
-      if (!drawing) return;
-      const pos = getMousePos(e);
-      const currX = pos.x;
-      const currY = pos.y;
-      
-      if (activeTool === "brush") {
-        ctx.lineTo(currX, currY);
-        ctx.stroke();
-      } else {
-        // Restore cached state for live preview of rect / arrow shape
-        ctx.putImageData(savedState, 0, 0);
-        ctx.strokeStyle = "#ef4444";
-        ctx.lineWidth = 4;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        if (activeTool === "rect") {
-          ctx.strokeRect(startX, startY, currX - startX, currY - startY);
-        } else if (activeTool === "arrow") {
-          drawArrow(ctx, startX, startY, currX, currY);
-        }
-      }
-    });
-    
-    canvas.addEventListener("mouseup", () => {
-      if (!drawing) return;
-      drawing = false;
-      // Commit the drawing to cached state
-      savedState = ctx.getImageData(0, 0, w, h);
-    });
-    
-    canvas.addEventListener("mouseleave", () => {
-      if (drawing) {
-        drawing = false;
-        savedState = ctx.getImageData(0, 0, w, h);
-      }
-    });
+    savedState = ctx.getImageData(0, 0, origW, origH);
+  }
+  
+  img.onload = () => {
+    initCanvas();
   };
+  img.src = imgDataUrl;
+  
+  const toolButtons = {
+    brush: document.getElementById("anno-tool-brush"),
+    rect: document.getElementById("anno-tool-rect"),
+    arrow: document.getElementById("anno-tool-arrow"),
+    crop: document.getElementById("anno-tool-crop")
+  };
+  
+  Object.keys(toolButtons).forEach(t => {
+    toolButtons[t].addEventListener("click", () => {
+      Object.values(toolButtons).forEach(b => b.classList.remove("active"));
+      toolButtons[t].classList.add("active");
+      activeTool = t;
+    });
+  });
+  
+  document.getElementById("anno-tool-clear").addEventListener("click", () => {
+    ctx.drawImage(img, 0, 0, origW, origH);
+    savedState = ctx.getImageData(0, 0, origW, origH);
+  });
+  
+  document.getElementById("anno-act-cancel").addEventListener("click", () => {
+    overlay.remove();
+    sidebar.hidden = false;
+    launcher.hidden = true;
+    setSidebarMinimized(false);
+  });
+  
+  document.getElementById("anno-act-save").addEventListener("click", () => {
+    const annotatedBase64 = canvas.toDataURL("image/jpeg", 0.9);
+    selectedImages.push(annotatedBase64);
+    renderPreviews();
+    overlay.remove();
+    sidebar.hidden = false;
+    launcher.hidden = true;
+    setSidebarMinimized(false);
+    setStatus("Annotated screenshot added successfully.");
+    saveDraft();
+  });
+  
+  // Helper to get correctly scaled canvas coordinates
+  function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  // Drawing event listeners
+  canvas.addEventListener("mousedown", (e) => {
+    drawing = true;
+    const pos = getMousePos(e);
+    startX = pos.x;
+    startY = pos.y;
+    
+    savedState = ctx.getImageData(0, 0, origW, origH);
+    
+    if (activeTool === "brush") {
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = baseLineWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    }
+  });
+  
+  canvas.addEventListener("mousemove", (e) => {
+    if (!drawing) return;
+    const pos = getMousePos(e);
+    const currX = pos.x;
+    const currY = pos.y;
+    
+    if (activeTool === "brush") {
+      ctx.lineTo(currX, currY);
+      ctx.stroke();
+    } else {
+      ctx.putImageData(savedState, 0, 0);
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = baseLineWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (activeTool === "rect") {
+        ctx.strokeRect(startX, startY, currX - startX, currY - startY);
+      } else if (activeTool === "arrow") {
+        drawArrow(ctx, startX, startY, currX, currY, scaleFactor);
+      } else if (activeTool === "crop") {
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5 * scaleFactor;
+        ctx.setLineDash([4 * scaleFactor, 4 * scaleFactor]);
+        ctx.strokeRect(startX, startY, currX - startX, currY - startY);
+        
+        ctx.strokeStyle = "#000000";
+        ctx.lineDashOffset = 4 * scaleFactor;
+        ctx.strokeRect(startX, startY, currX - startX, currY - startY);
+        ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
+      }
+    }
+  });
+  
+  canvas.addEventListener("mouseup", (e) => {
+    if (!drawing) return;
+    drawing = false;
+    
+    const pos = getMousePos(e);
+    const currX = pos.x;
+    const currY = pos.y;
+    
+    if (activeTool === "crop") {
+      const x = Math.min(startX, currX);
+      const y = Math.min(startY, currY);
+      const cropW = Math.abs(currX - startX);
+      const cropH = Math.abs(currY - startY);
+      
+      if (cropW > 20 && cropH > 20) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = cropW;
+        tempCanvas.height = cropH;
+        const tempCtx = tempCanvas.getContext("2d");
+        
+        tempCtx.drawImage(canvas, x, y, cropW, cropH, 0, 0, cropW, cropH);
+        
+        const croppedDataUrl = tempCanvas.toDataURL("image/png");
+        
+        activeTool = "brush";
+        Object.keys(toolButtons).forEach(t => {
+          if (t === "brush") toolButtons[t].classList.add("active");
+          else toolButtons[t].classList.remove("active");
+        });
+        
+        img.src = croppedDataUrl;
+      } else {
+        ctx.putImageData(savedState, 0, 0);
+      }
+    } else {
+      savedState = ctx.getImageData(0, 0, origW, origH);
+    }
+  });
+  
+  canvas.addEventListener("mouseleave", () => {
+    if (drawing) {
+      drawing = false;
+      if (activeTool === "crop") {
+        ctx.putImageData(savedState, 0, 0);
+      } else {
+        savedState = ctx.getImageData(0, 0, origW, origH);
+      }
+    }
+  });
 }
 
 async function saveTaskToInTrackr() {
@@ -634,6 +861,7 @@ async function saveTaskToInTrackr() {
     saveDirectBtn.disabled = false;
     if (response && response.success) {
       setStatus("Task saved directly to InTrackr successfully!");
+      clearDraft();
     } else {
       setStatus(response && response.error ? response.error : "Failed to save task to InTrackr.", true);
     }
@@ -651,7 +879,7 @@ function taskToText(task) {
 
   const steps = (task.steps || []).map(cleanListItem);
 
-  return [
+  const sections = [
     task.description || "",
     "",
     "Steps to Reproduce / Context:",
@@ -662,7 +890,9 @@ function taskToText(task) {
     "",
     "Actual Result:",
     task.actualResult || ""
-  ].join("\n").trim();
+  ];
+
+  return sections.join("\n").trim();
 }
 
 async function generateTask() {
@@ -703,6 +933,7 @@ async function generateTask() {
     titleInput.value = generatedTask.title || "";
     output.value = taskToText(generatedTask);
     setStatus("Task ready. Review it, then fill the form.");
+    saveDraft();
   } catch (error) {
     setStatus(error.message, true);
   } finally {
@@ -942,6 +1173,7 @@ function renderPreviews() {
   
   if (selectedImages.length === 0) {
     previewGrid.style.display = "none";
+    uploadPlaceholder.hidden = false;
   } else {
     previewGrid.style.display = "flex";
   }
@@ -964,6 +1196,7 @@ function renderPreviews() {
       selectedImages.splice(index, 1);
       renderPreviews();
       setStatus(`Image ${index + 1} removed.`);
+      saveDraft();
     });
     
     item.appendChild(img);
@@ -1193,6 +1426,7 @@ document.getElementById("intrackr-ai-reset").addEventListener("click", () => {
   }
   uploadPlaceholder.hidden = false;
   setStatus("");
+  clearDraft();
 });
 document.getElementById("intrackr-ai-close").addEventListener("click", () => {
   sidebar.hidden = true;
@@ -1388,6 +1622,7 @@ async function handleImageFiles(files) {
   }
 
   renderPreviews();
+  saveDraft();
 
   if (errorCount > 0) {
     setStatus(`Imported ${importCount} image(s). Failed to import ${errorCount} file(s).`, true);
@@ -1398,7 +1633,7 @@ async function handleImageFiles(files) {
 
 // Image Interaction Event Listeners
 imageContainer.addEventListener("click", event => {
-  if (event.target.closest(".remove-btn, #intrackr-ai-btn-capture")) return;
+  if (event.target.closest(".remove-btn, #intrackr-ai-btn-capture, #intrackr-ai-btn-capture-screen")) return;
   imageInput.click();
 });
 
@@ -1446,5 +1681,54 @@ document.getElementById("intrackr-ai-btn-capture").addEventListener("click", (e)
   e.stopPropagation();
   autoCaptureScreenshot();
 });
+
+document.getElementById("intrackr-ai-btn-capture-screen").addEventListener("click", (e) => {
+  e.stopPropagation();
+  autoCaptureDesktopScreen();
+});
+
+  // Shared state event listeners
+  input.addEventListener("input", saveDraft);
+  titleInput.addEventListener("input", saveDraft);
+  output.addEventListener("input", saveDraft);
+  projectInput.addEventListener("change", saveDraft);
+  if (assigneeInput) assigneeInput.addEventListener("change", saveDraft);
+  if (qaAssigneeInput) qaAssigneeInput.addEventListener("change", saveDraft);
+  
+  const priorityEl = document.getElementById("intrackr-ai-priority");
+  if (priorityEl) priorityEl.addEventListener("change", saveDraft);
+  
+  const typeEl = document.getElementById("intrackr-ai-type");
+  if (typeEl) typeEl.addEventListener("change", saveDraft);
+  
+  // Listen for draft synchronization from other tabs
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.intrackr_ai_task_draft) {
+      const newDraft = changes.intrackr_ai_task_draft.newValue;
+      if (newDraft) {
+        if (document.activeElement !== input) input.value = newDraft.summary || "";
+        if (document.activeElement !== titleInput) titleInput.value = newDraft.title || "";
+        if (document.activeElement !== output) output.value = newDraft.description || "";
+        
+        selectedImages = newDraft.images || [];
+        
+        if (document.activeElement !== projectInput && newDraft.project && projectInput) projectInput.value = newDraft.project;
+        if (document.activeElement !== assigneeInput && newDraft.assignee && assigneeInput) assigneeInput.value = newDraft.assignee;
+        if (document.activeElement !== qaAssigneeInput && newDraft.qaAssignee && qaAssigneeInput) qaAssigneeInput.value = newDraft.qaAssignee;
+        
+        if (document.activeElement !== priorityEl && priorityEl && newDraft.priority) priorityEl.value = newDraft.priority;
+        if (document.activeElement !== typeEl && typeEl && newDraft.type) typeEl.value = newDraft.type;
+        
+        renderPreviews();
+      } else {
+        // Draft was cleared (reset clicked in another tab)
+        if (document.activeElement !== input) input.value = "";
+        if (document.activeElement !== titleInput) titleInput.value = "";
+        if (document.activeElement !== output) output.value = "";
+        selectedImages = [];
+        renderPreviews();
+      }
+    }
+  });
 
 })();

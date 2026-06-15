@@ -75,11 +75,7 @@ function normalizeTask(task, fallback) {
     description: String(task.description || "").trim(),
     steps: Array.isArray(task.steps) ? task.steps.map(cleanListItem) : [],
     expectedResult: String(task.expectedResult || "").trim(),
-    actualResult: String(task.actualResult || "").trim(),
-    acceptanceCriteria: Array.isArray(task.acceptanceCriteria)
-      ? task.acceptanceCriteria.map(cleanListItem)
-      : [],
-    developerNotes: String(task.developerNotes || "").trim()
+    actualResult: String(task.actualResult || "").trim()
   };
 }
 
@@ -125,7 +121,7 @@ function readJsonBody(req) {
 
 async function createTask(req, res) {
   try {
-    const { prompt, priority = "Medium", type = "Bug", pageUrl = "", image = "", images = [] } = await readJsonBody(req);
+    const { prompt, priority = "Medium", type = "Bug", pageUrl = "", image = "", images = [], consoleLogs = [] } = await readJsonBody(req);
 
     if (AI_PROVIDER === "openai" && !process.env.OPENAI_API_KEY) {
       return sendJson(res, 500, {
@@ -160,8 +156,9 @@ async function createTask(req, res) {
         "Turn the issue description or uploaded image into a very concise task, keeping all sections as brief as possible instead of a lengthy procedure.",
         "Be specific and practical.",
         "Return only valid JSON with these keys:",
-        "title, type, priority, description, steps, expectedResult, actualResult, acceptanceCriteria, developerNotes.",
-        "Ensure every field (description, steps, expectedResult, actualResult, acceptanceCriteria, developerNotes) is populated but kept extremely short, brief, and concise. For example, limit 'steps' and 'acceptanceCriteria' to at most 1-2 very short items, and keep other fields to a single brief sentence."
+        "title, type, priority, description, steps, expectedResult, actualResult.",
+        "Ensure every field (description, steps, expectedResult, actualResult) is populated but kept extremely short, brief, and concise. For example, limit 'steps' to at most 1-2 very short items, and keep other fields to a single brief sentence.",
+        "If console logs, warnings, or exceptions are provided in the prompt, analyze them and incorporate critical errors, error messages, or stack traces into the actualResult to assist developer debugging."
       ].join(" ");
     } else {
       systemPrompt = [
@@ -169,8 +166,9 @@ async function createTask(req, res) {
         "Turn a short issue description or an uploaded image with highlights/issues into a detailed, actionable task.",
         "Be specific, practical, and avoid inventing app facts that were not provided.",
         "Return only valid JSON with these keys:",
-        "title, type, priority, description, steps, expectedResult, actualResult, acceptanceCriteria, developerNotes.",
-        "steps and acceptanceCriteria must be arrays of strings. Do not include step numbers or bullet symbol prefixes in the individual array elements of steps and acceptanceCriteria (e.g. write 'Log in' instead of '1. Log in' or '- Log in')."
+        "title, type, priority, description, steps, expectedResult, actualResult.",
+        "steps must be an array of strings. Do not include step numbers or bullet symbol prefixes in the individual array elements of steps (e.g. write 'Log in' instead of '1. Log in' or '- Log in').",
+        "If console logs, warnings, or exceptions are provided in the prompt, analyze them and incorporate critical errors, error messages, or stack traces into the actualResult to assist developer debugging."
       ].join(" ");
     }
 
@@ -187,6 +185,14 @@ Source page: ${pageUrl}
 
 Write it for developers who need to understand, reproduce, fix, and verify the issue.
 `;
+
+    if (consoleLogs && consoleLogs.length > 0) {
+      userPromptText += "\nCaptured Browser Console Logs / Errors:\n";
+      consoleLogs.forEach(log => {
+        userPromptText += `[${log.type.toUpperCase()}] [${log.timestamp}] ${log.message}\n`;
+      });
+      userPromptText += "\nUse these logs and exceptions to populate the technical details of the issue, such as exact error messages, failure locations, and any stack trace info under 'actualResult'.\n";
+    }
 
     if (allImages.length > 0) {
       userPromptText += "\nUse the provided screenshots/images as visual context to make the task description complete and detailed.";
