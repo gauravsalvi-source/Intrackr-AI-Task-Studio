@@ -1,6 +1,6 @@
 // background.js for Intrackr AI Task Builder Extension
 
-const backendUrl = "https://intrackr-ai-task-builder.onrender.com";
+const backendUrl = "https://intrackr-ai-task-studio-1.onrender.com";
 
 function captureActiveTab(windowId) {
   return new Promise((resolve, reject) => {

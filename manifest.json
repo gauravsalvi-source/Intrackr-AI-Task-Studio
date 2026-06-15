@@ -7,7 +7,7 @@
   "host_permissions": [
     "<all_urls>",
     "http://localhost:3000/*",
-    "https://intrackr-ai-task-builder.onrender.com/*",
+    "https://intrackr-ai-task-studio-1.onrender.com/*",
     "https://intrackr.thalia-apps.com/*",
     "https://intrackr.thalia-apps.com/"
   ],

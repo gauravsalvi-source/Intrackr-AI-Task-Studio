@@ -1,5 +1,5 @@
 (() => {
-const API_BASE = "https://intrackr-ai-task-builder.onrender.com";
+const API_BASE = "https://intrackr-ai-task-studio-1.onrender.com";
 
 const root = document.createElement("div");
 root.innerHTML = `
