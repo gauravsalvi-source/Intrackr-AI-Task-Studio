@@ -83,7 +83,7 @@ function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-openai-api-key",
     "Content-Type": "application/json"
   });
   res.end(JSON.stringify(payload));
@@ -123,9 +123,20 @@ async function createTask(req, res) {
   try {
     const { prompt, priority = "Medium", type = "Bug", pageUrl = "", image = "", images = [], consoleLogs = [] } = await readJsonBody(req);
 
-    if (AI_PROVIDER === "openai" && !process.env.OPENAI_API_KEY) {
-      return sendJson(res, 500, {
-        error: "OPENAI_API_KEY is missing. Add it to .env and restart the backend."
+    const clientApiKey = req.headers["x-openai-api-key"];
+    let activeProvider = AI_PROVIDER;
+    if (clientApiKey) {
+      activeProvider = clientApiKey.startsWith("gsk_") ? "groq" : "openai";
+    }
+    const activeApiKey = clientApiKey || (activeProvider === "groq" ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY);
+
+    if (activeProvider === "openai" && !activeApiKey) {
+      return sendJson(res, 400, {
+        error: "OpenAI API key is missing. Please save your API key in the extension settings or configure the backend."
+      });
+    } else if (activeProvider === "groq" && !activeApiKey) {
+      return sendJson(res, 400, {
+        error: "Groq API key is missing. Please save your API key in the extension settings or configure the backend."
       });
     }
 
@@ -140,9 +151,12 @@ async function createTask(req, res) {
       });
     }
 
-    let activeModel = MODEL;
+    let activeModel = activeProvider === "groq"
+      ? process.env.GROQ_MODEL || "llama-3.1-8b-instant"
+      : process.env.OPENAI_MODEL || "gpt-4.1-mini";
+
     if (allImages.length > 0) {
-      if (AI_PROVIDER === "groq") {
+      if (activeProvider === "groq") {
         activeModel = process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
       } else {
         activeModel = process.env.OPENAI_VISION_MODEL || "gpt-4o-mini";
@@ -244,13 +258,13 @@ Write it for developers who need to understand, reproduce, fix, and verify the i
       }
     ];
 
-    const response = await fetch(AI_PROVIDER === "groq" ? GROQ_API_URL : OPENAI_API_URL, {
+    const response = await fetch(activeProvider === "groq" ? GROQ_API_URL : OPENAI_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${AI_PROVIDER === "groq" ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${activeApiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(AI_PROVIDER === "groq"
+      body: JSON.stringify(activeProvider === "groq"
         ? {
             model: activeModel,
             messages,
@@ -267,7 +281,7 @@ Write it for developers who need to understand, reproduce, fix, and verify the i
 
     if (!response.ok) {
       return sendJson(res, response.status, {
-        error: data.error?.message || `${AI_PROVIDER === "groq" ? "Groq" : "OpenAI"} request failed`
+        error: data.error?.message || `${activeProvider === "groq" ? "Groq" : "OpenAI"} request failed`
       });
     }
 
@@ -280,7 +294,7 @@ Write it for developers who need to understand, reproduce, fix, and verify the i
 
     if (!outputText) {
       return sendJson(res, 502, {
-        error: `${AI_PROVIDER === "groq" ? "Groq" : "OpenAI"} returned an empty response.`
+        error: `${activeProvider === "groq" ? "Groq" : "OpenAI"} returned an empty response.`
       });
     }
 

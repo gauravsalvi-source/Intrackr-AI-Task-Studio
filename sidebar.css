@@ -230,7 +230,8 @@
   width: 32px;
 }
 
-#intrackr-ai-theme {
+#intrackr-ai-theme,
+#intrackr-ai-settings {
   flex: 0 0 32px;
   font-size: 18px;
   line-height: 1;
@@ -788,3 +789,74 @@
   background: #450a0a;
   color: #fca5a5;
 }
+
+/* Settings Panel styles */
+#intrackr-ai-settings-panel {
+  background: var(--intrackr-ai-panel);
+  border: 1px solid var(--intrackr-ai-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 4px;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-content label {
+  color: var(--intrackr-ai-muted) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  margin-bottom: 2px !important;
+}
+
+.settings-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-input-group input {
+  flex: 1 !important;
+  height: 36px !important;
+  padding: 0 10px !important;
+}
+
+.settings-input-group button {
+  flex: 0 0 auto !important;
+  height: 36px !important;
+  font-size: 12px !important;
+  padding: 0 12px !important;
+  width: auto !important;
+}
+
+#intrackr-ai-settings-status {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  min-height: 14px !important;
+}
+
+#intrackr-ai-settings-status.success {
+  color: var(--intrackr-ai-accent) !important;
+}
+
+#intrackr-ai-settings-status.error {
+  color: var(--intrackr-ai-danger) !important;
+}
+
+#intrackr-ai-settings-status.active {
+  color: var(--intrackr-ai-accent) !important;
+}
+
+#intrackr-ai-settings-status.inactive {
+  color: var(--intrackr-ai-muted) !important;
+}
+
+#intrackr-ai-settings.active {
+  background: var(--intrackr-ai-button-hover);
+  border-color: var(--intrackr-ai-accent);
+}
+

@@ -15,6 +15,12 @@ root.innerHTML = `
     <header id="intrackr-ai-header">
       <span>Create New Task</span>
       <div class="header-actions">
+        <button id="intrackr-ai-settings" type="button" title="Settings" aria-label="Settings">
+          <svg id="intrackr-ai-settings-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
         <button id="intrackr-ai-theme" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
           <svg id="intrackr-ai-theme-icon" class="moon" aria-hidden="true" viewBox="0 0 24 24">
             <path class="moon-shape" d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 7 7 0 1 0 20.5 15.5Z"></path>
@@ -26,6 +32,18 @@ root.innerHTML = `
         <button id="intrackr-ai-close" type="button" title="Close" aria-label="Close">×</button>
       </div>
     </header>
+
+    <div id="intrackr-ai-settings-panel" style="display: none;">
+      <div class="settings-content">
+        <label for="intrackr-ai-openai-key">OpenAI API Key (per install)</label>
+        <div class="settings-input-group">
+          <input id="intrackr-ai-openai-key" type="password" placeholder="Enter sk-proj-..." />
+          <button id="intrackr-ai-save-settings" type="button" class="primary">Save</button>
+          <button id="intrackr-ai-clear-settings" type="button">Clear</button>
+        </div>
+        <p id="intrackr-ai-settings-status"></p>
+      </div>
+    </div>
 
     <section id="intrackr-ai-body">
       <label for="intrackr-ai-input">Issue summary</label>
@@ -140,6 +158,13 @@ const insertBtn = document.getElementById("intrackr-ai-insert");
 const captureBtn = document.getElementById("intrackr-ai-btn-capture");
 const captureScreenBtn = document.getElementById("intrackr-ai-btn-capture-screen");
 
+const settingsBtn = document.getElementById("intrackr-ai-settings");
+const settingsPanel = document.getElementById("intrackr-ai-settings-panel");
+const openaiKeyInput = document.getElementById("intrackr-ai-openai-key");
+const saveSettingsBtn = document.getElementById("intrackr-ai-save-settings");
+const clearSettingsBtn = document.getElementById("intrackr-ai-clear-settings");
+const settingsStatus = document.getElementById("intrackr-ai-settings-status");
+
 
 const isOnCreateTaskPage = window.location.href.startsWith("https://intrackr.thalia-apps.com/tasks/create") || (window.location.href.includes("/tasks/") && window.location.href.includes("/edit"));
 
@@ -157,6 +182,28 @@ if (isOnCreateTaskPage) {
 
 // Fetch InTrackr projects, users, and QA assignees for dropdowns on load
 fetchDropdownData();
+
+// Load saved OpenAI API key if any
+if (isContextValid()) {
+  chrome.storage.local.get(["intrackr_openai_api_key"], (result) => {
+    if (result.intrackr_openai_api_key) {
+      openaiKeyInput.value = result.intrackr_openai_api_key;
+      updateSettingsStatus(true);
+    } else {
+      updateSettingsStatus(false);
+    }
+  });
+}
+
+function updateSettingsStatus(hasKey) {
+  if (hasKey) {
+    settingsStatus.textContent = "API Key is saved & active.";
+    settingsStatus.className = "active";
+  } else {
+    settingsStatus.textContent = "No custom key saved. Using backend default.";
+    settingsStatus.className = "inactive";
+  }
+}
 
 // Listen for message from background script to toggle sidebar or capture screenshot
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -996,11 +1043,26 @@ async function generateTask() {
   generateButton.disabled = true;
 
   try {
+    const customKey = await new Promise((resolve) => {
+      if (isContextValid()) {
+        chrome.storage.local.get(["intrackr_openai_api_key"], (result) => {
+          resolve(result.intrackr_openai_api_key || "");
+        });
+      } else {
+        resolve("");
+      }
+    });
+
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (customKey) {
+      headers["x-openai-api-key"] = customKey;
+    }
+
     const response = await fetch(`${API_BASE}/create-task`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers,
       body: JSON.stringify({
         prompt,
         priority: document.getElementById("intrackr-ai-priority").value,
@@ -1487,6 +1549,43 @@ async function fillIntrackrForm() {
 document.getElementById("intrackr-ai-generate").addEventListener("click", generateTask);
 document.getElementById("intrackr-ai-insert").addEventListener("click", fillIntrackrForm);
 document.getElementById("intrackr-ai-save-direct").addEventListener("click", saveTaskToInTrackr);
+settingsBtn.addEventListener("click", () => {
+  const isVisible = settingsPanel.style.display !== "none";
+  settingsPanel.style.display = isVisible ? "none" : "block";
+  settingsBtn.classList.toggle("active", !isVisible);
+});
+
+saveSettingsBtn.addEventListener("click", () => {
+  const key = openaiKeyInput.value.trim();
+  if (!key) {
+    settingsStatus.textContent = "Please enter a key before saving.";
+    settingsStatus.className = "error";
+    return;
+  }
+  if (isContextValid()) {
+    chrome.storage.local.set({ intrackr_openai_api_key: key }, () => {
+      updateSettingsStatus(true);
+      settingsStatus.textContent = "Key saved successfully!";
+      settingsStatus.className = "success";
+      setTimeout(() => {
+        settingsPanel.style.display = "none";
+        settingsBtn.classList.remove("active");
+      }, 1000);
+    });
+  }
+});
+
+clearSettingsBtn.addEventListener("click", () => {
+  if (isContextValid()) {
+    chrome.storage.local.remove("intrackr_openai_api_key", () => {
+      openaiKeyInput.value = "";
+      updateSettingsStatus(false);
+      settingsStatus.textContent = "Key cleared.";
+      settingsStatus.className = "error";
+    });
+  }
+});
+
 document.getElementById("intrackr-ai-theme").addEventListener("click", () => {
   const isDark = sidebar.classList.toggle("dark");
   const themeButton = document.getElementById("intrackr-ai-theme");
