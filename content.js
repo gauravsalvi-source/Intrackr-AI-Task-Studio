@@ -35,9 +35,18 @@ root.innerHTML = `
 
     <div id="intrackr-ai-settings-panel" style="display: none;">
       <div class="settings-content">
-        <label for="intrackr-ai-openai-key">OpenAI API Key (per install)</label>
-        <div class="settings-input-group">
-          <input id="intrackr-ai-openai-key" type="password" placeholder="Enter sk-proj-..." />
+        <label for="intrackr-ai-openai-key-select">OpenAI API Key (per install)</label>
+        <select id="intrackr-ai-openai-key-select" style="width: 100%; margin-bottom: 4px;">
+          <option value="">-- Select API Key --</option>
+          <option value="gsk_placeholder_key_1">Key 1 (Placeholder 1)</option>
+          <option value="gsk_placeholder_key_2">Key 2 (Placeholder 2)</option>
+          <option value="gsk_placeholder_key_3">Key 3 (Placeholder 3)</option>
+          <option value="custom">Custom Key...</option>
+        </select>
+        <div id="intrackr-ai-custom-key-container" class="settings-input-group" style="display: none; margin-bottom: 4px;">
+          <input id="intrackr-ai-openai-key" type="password" placeholder="Enter sk-proj-... / gsk_..." />
+        </div>
+        <div class="settings-input-group" style="justify-content: flex-end;">
           <button id="intrackr-ai-save-settings" type="button" class="primary">Save</button>
           <button id="intrackr-ai-clear-settings" type="button">Clear</button>
         </div>
@@ -105,6 +114,13 @@ root.innerHTML = `
       <label for="intrackr-ai-output">Description</label>
       <textarea id="intrackr-ai-output" placeholder="The detailed task will appear here."></textarea>
 
+      <button id="intrackr-ai-link-subtask" type="button" class="link-subtask-btn">Add as Sub-task</button>
+
+      <div id="intrackr-ai-parent-link" class="parent-link-banner" hidden>
+        <span id="intrackr-ai-parent-link-text"></span>
+        <button id="intrackr-ai-parent-link-clear" type="button" title="Remove parent link" aria-label="Remove parent link">×</button>
+      </div>
+
       <div class="footer-actions">
         <button id="intrackr-ai-insert" type="button">Fill Intrackr Form</button>
         <button id="intrackr-ai-save-direct" type="button" class="primary">Save to InTrackr</button>
@@ -114,6 +130,8 @@ root.innerHTML = `
 
       <p id="intrackr-ai-status" role="status"></p>
     </section>
+
+    <div class="intrackr-ai-credit">Powered by <span>Gaurav</span></div>
 
     <span class="resize-handle resize-n" data-resize="n"></span>
     <span class="resize-handle resize-e" data-resize="e"></span>
@@ -132,6 +150,8 @@ document.body.appendChild(root);
 
 let generatedTask = null;
 let selectedImages = [];
+let selectedParentTask = null;
+let isSavingToIntrackr = false;
 let minimized = false;
 let savedSidebarStyle = { width: "", height: "" };
 
@@ -155,12 +175,18 @@ const previewGrid = document.getElementById("intrackr-ai-images-preview-grid");
 
 const saveDirectBtn = document.getElementById("intrackr-ai-save-direct");
 const insertBtn = document.getElementById("intrackr-ai-insert");
+const linkSubtaskBtn = document.getElementById("intrackr-ai-link-subtask");
+const parentLinkBanner = document.getElementById("intrackr-ai-parent-link");
+const parentLinkText = document.getElementById("intrackr-ai-parent-link-text");
+const parentLinkClearBtn = document.getElementById("intrackr-ai-parent-link-clear");
 const captureBtn = document.getElementById("intrackr-ai-btn-capture");
 const captureScreenBtn = document.getElementById("intrackr-ai-btn-capture-screen");
 
 const settingsBtn = document.getElementById("intrackr-ai-settings");
 const settingsPanel = document.getElementById("intrackr-ai-settings-panel");
 const openaiKeyInput = document.getElementById("intrackr-ai-openai-key");
+const openaiKeySelect = document.getElementById("intrackr-ai-openai-key-select");
+const customKeyContainer = document.getElementById("intrackr-ai-custom-key-container");
 const saveSettingsBtn = document.getElementById("intrackr-ai-save-settings");
 const clearSettingsBtn = document.getElementById("intrackr-ai-clear-settings");
 const settingsStatus = document.getElementById("intrackr-ai-settings-status");
@@ -186,10 +212,26 @@ fetchDropdownData();
 // Load saved OpenAI API key if any
 if (isContextValid()) {
   chrome.storage.local.get(["intrackr_openai_api_key"], (result) => {
-    if (result.intrackr_openai_api_key) {
-      openaiKeyInput.value = result.intrackr_openai_api_key;
+    const savedKey = result.intrackr_openai_api_key || "";
+    if (savedKey) {
+      const presetKeys = [
+        "gsk_placeholder_key_1",
+        "gsk_placeholder_key_2",
+        "gsk_placeholder_key_3"
+      ];
+      if (presetKeys.includes(savedKey)) {
+        openaiKeySelect.value = savedKey;
+        customKeyContainer.style.display = "none";
+      } else {
+        openaiKeySelect.value = "custom";
+        openaiKeyInput.value = savedKey;
+        customKeyContainer.style.display = "block";
+      }
       updateSettingsStatus(true);
     } else {
+      openaiKeySelect.value = "";
+      openaiKeyInput.value = "";
+      customKeyContainer.style.display = "none";
       updateSettingsStatus(false);
     }
   });
@@ -791,26 +833,7 @@ function openAnnotationEditor(imgDataUrl) {
   });
   
   document.getElementById("anno-act-save").addEventListener("click", () => {
-    const maxDim = 1200;
-    let targetW = canvas.width;
-    let targetH = canvas.height;
-    if (targetW > maxDim || targetH > maxDim) {
-      if (targetW > targetH) {
-        targetH = Math.round((targetH * maxDim) / targetW);
-        targetW = maxDim;
-      } else {
-        targetW = Math.round((targetW * maxDim) / targetH);
-        targetH = maxDim;
-      }
-    }
-
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = targetW;
-    tempCanvas.height = targetH;
-    const tempCtx = tempCanvas.getContext("2d");
-    tempCtx.drawImage(canvas, 0, 0, targetW, targetH);
-
-    const annotatedBase64 = tempCanvas.toDataURL("image/jpeg", 0.85);
+    const annotatedBase64 = exportCanvasToScreenshotDataUrl(canvas, canvas.width, canvas.height);
     selectedImages.push(annotatedBase64);
     renderPreviews();
     overlay.remove();
@@ -904,6 +927,7 @@ function openAnnotationEditor(imgDataUrl) {
         tempCanvas.width = cropW;
         tempCanvas.height = cropH;
         const tempCtx = tempCanvas.getContext("2d");
+        configureHighQualityCanvasContext(tempCtx);
         
         tempCtx.drawImage(canvas, x, y, cropW, cropH, 0, 0, cropW, cropH);
         
@@ -937,6 +961,8 @@ function openAnnotationEditor(imgDataUrl) {
 }
 
 async function saveTaskToInTrackr() {
+  if (isSavingToIntrackr) return;
+
   const title = titleInput.value.trim();
   const description = output.value.trim();
   const projectSelect = document.getElementById("intrackr-ai-project");
@@ -969,6 +995,7 @@ async function saveTaskToInTrackr() {
   }
 
   setStatus("Saving task to InTrackr...");
+  isSavingToIntrackr = true;
   saveDirectBtn.disabled = true;
 
   const payload = {
@@ -986,21 +1013,315 @@ async function saveTaskToInTrackr() {
     qa_user_id: qaAssigneeId
   };
 
+  const parentId = resolveParentTaskId();
+  if (parentId) {
+    payload.parent_task_id = parentId;
+  }
+
   if (!isContextValid()) {
     setStatus("Extension context invalidated. Please reload the webpage to save to InTrackr.", true);
+    isSavingToIntrackr = false;
     saveDirectBtn.disabled = false;
     return;
   }
 
   chrome.runtime.sendMessage({ action: "createTaskInTrackr", payload }, (response) => {
+    isSavingToIntrackr = false;
     saveDirectBtn.disabled = false;
     if (response && response.success) {
-      setStatus("Task saved directly to InTrackr successfully!");
+      const parentMsg = response.subtask && parentId
+        ? ` Added as sub-task of #${getStoredParentTask()?.displayId || parentId}.`
+        : "";
+      setStatus("Task saved directly to InTrackr successfully!" + parentMsg);
       clearDraft();
     } else {
       setStatus(response && response.error ? response.error : "Failed to save task to InTrackr.", true);
     }
   });
+}
+
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffWeeks < 5) return `${diffWeeks}w ago`;
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  return `${Math.floor(diffMonths / 12)}y ago`;
+}
+
+function getLabelClass(label) {
+  const normalized = String(label).toLowerCase();
+  if (normalized.includes("bug")) return "label-bug";
+  if (normalized.includes("enhancement") || normalized.includes("feature")) return "label-enhancement";
+  return "label-default";
+}
+
+const PARENT_TASK_STORAGE_KEY = "intrackrAiSelectedParentTask";
+
+function persistSelectedParentTask(task) {
+  try {
+    if (task) {
+      sessionStorage.setItem(PARENT_TASK_STORAGE_KEY, JSON.stringify(task));
+    } else {
+      sessionStorage.removeItem(PARENT_TASK_STORAGE_KEY);
+    }
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+function getStoredParentTask() {
+  if (selectedParentTask?.id || selectedParentTask?.displayId) {
+    return selectedParentTask;
+  }
+  try {
+    const raw = sessionStorage.getItem(PARENT_TASK_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function resolveParentTaskId(task = null) {
+  const source = task || getStoredParentTask();
+  if (!source) return "";
+  const id = source.id ?? source.displayId ?? source.task_id ?? source.number;
+  return String(id || "").replace(/^#/, "").trim();
+}
+
+function updateParentLinkBanner() {
+  if (!parentLinkBanner || !parentLinkText) return;
+
+  if (selectedParentTask) {
+    parentLinkText.textContent = `Sub-task of #${selectedParentTask.displayId || selectedParentTask.id} ${selectedParentTask.title}`;
+    parentLinkBanner.hidden = false;
+  } else {
+    parentLinkBanner.hidden = true;
+    parentLinkText.textContent = "";
+  }
+}
+
+function setSelectedParentTask(task) {
+  selectedParentTask = task;
+  persistSelectedParentTask(task);
+  updateParentLinkBanner();
+}
+
+(function restoreParentFromStorage() {
+  const stored = getStoredParentTask();
+  if (stored) {
+    selectedParentTask = stored;
+    updateParentLinkBanner();
+  }
+})();
+
+function lookupTaskById(taskId) {
+  return new Promise((resolve, reject) => {
+    if (!isContextValid()) {
+      reject(new Error("Extension context invalidated. Reload the page and try again."));
+      return;
+    }
+
+    chrome.runtime.sendMessage({ action: "lookupTaskById", taskId }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else if (response && response.success && response.task) {
+        resolve(response.task);
+      } else {
+        reject(new Error(response?.error || "Task not found."));
+      }
+    });
+  });
+}
+
+function renderParentTaskList(container, tasks, selectedId, onSelect) {
+  container.innerHTML = "";
+
+  if (tasks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "subtask-picker-empty";
+    empty.textContent = "Look up a task by its number to select a parent.";
+    container.appendChild(empty);
+    return;
+  }
+
+  tasks.forEach(task => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "subtask-picker-item" + (selectedId === task.id ? " selected" : "");
+    item.dataset.taskId = task.id;
+
+    const main = document.createElement("div");
+    main.className = "subtask-picker-item-main";
+
+    const titleLine = document.createElement("div");
+    titleLine.className = "subtask-picker-title";
+    titleLine.textContent = `#${task.displayId || task.id} ${task.title}`;
+
+    const metaLine = document.createElement("div");
+    metaLine.className = "subtask-picker-meta";
+
+    const metaParts = [];
+    if (task.status) metaParts.push(task.status);
+    if (task.assignee) metaParts.push(task.assignee);
+
+    metaParts.forEach((part, index) => {
+      if (index > 0) {
+        const dot = document.createElement("span");
+        dot.className = "subtask-picker-dot";
+        dot.textContent = "•";
+        metaLine.appendChild(dot);
+      }
+      const span = document.createElement("span");
+      span.textContent = part;
+      metaLine.appendChild(span);
+    });
+
+    if (task.labels && task.labels.length > 0) {
+      task.labels.forEach(label => {
+        const dot = document.createElement("span");
+        dot.className = "subtask-picker-dot";
+        dot.textContent = "•";
+        metaLine.appendChild(dot);
+
+        const pill = document.createElement("span");
+        pill.className = `subtask-picker-label ${getLabelClass(label)}`;
+        pill.textContent = label;
+        metaLine.appendChild(pill);
+      });
+    }
+
+    main.appendChild(titleLine);
+    main.appendChild(metaLine);
+
+    const time = document.createElement("span");
+    time.className = "subtask-picker-time";
+    time.textContent = formatRelativeTime(task.updatedAt);
+
+    item.appendChild(main);
+    item.appendChild(time);
+    item.addEventListener("click", () => onSelect(task));
+    container.appendChild(item);
+  });
+}
+
+function openParentTaskPickerModal() {
+  const old = document.getElementById("intrackr-subtask-picker-overlay");
+  if (old) old.remove();
+
+  let pickedTask = selectedParentTask;
+
+  const overlay = document.createElement("div");
+  overlay.id = "intrackr-subtask-picker-overlay";
+  overlay.innerHTML = `
+    <div class="subtask-picker-modal" role="dialog" aria-modal="true" aria-labelledby="subtask-picker-title">
+      <div class="subtask-picker-header">
+        <h2 id="subtask-picker-title">Add as sub-task to another task</h2>
+        <button type="button" class="subtask-picker-close" aria-label="Close">×</button>
+      </div>
+      <div class="subtask-picker-manual">
+        <span>Enter parent task #</span>
+        <input type="text" class="subtask-picker-manual-id" placeholder="e.g. 2473" inputmode="numeric" />
+        <button type="button" class="subtask-picker-manual-btn">Look up</button>
+      </div>
+      <div class="subtask-picker-list"></div>
+      <div class="subtask-picker-actions">
+        <button type="button" class="subtask-picker-confirm" disabled>Confirm</button>
+      </div>
+      <p class="subtask-picker-status" role="status"></p>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const closeBtn = overlay.querySelector(".subtask-picker-close");
+  const confirmBtn = overlay.querySelector(".subtask-picker-confirm");
+  const manualIdInput = overlay.querySelector(".subtask-picker-manual-id");
+  const manualIdBtn = overlay.querySelector(".subtask-picker-manual-btn");
+  const listEl = overlay.querySelector(".subtask-picker-list");
+  const pickerStatus = overlay.querySelector(".subtask-picker-status");
+
+  function closeModal() {
+    overlay.remove();
+  }
+
+  function updateConfirmState() {
+    confirmBtn.disabled = !pickedTask;
+  }
+
+  function selectTask(task) {
+    pickedTask = task;
+    renderParentTaskList(listEl, [task], pickedTask?.id, selectTask);
+    updateConfirmState();
+  }
+
+  async function applyManualTaskId() {
+    const raw = manualIdInput.value.trim().replace(/^#/, "");
+    if (!raw) {
+      pickerStatus.textContent = "Enter a task number (e.g. 2473).";
+      pickerStatus.className = "subtask-picker-status error";
+      return;
+    }
+
+    if (!/^\d+$/.test(raw)) {
+      pickerStatus.textContent = "Enter a numeric task ID (e.g. 2473).";
+      pickerStatus.className = "subtask-picker-status error";
+      return;
+    }
+
+    pickerStatus.textContent = `Looking up task #${raw}...`;
+    pickerStatus.className = "subtask-picker-status";
+
+    try {
+      const task = await lookupTaskById(raw);
+      selectTask(task);
+      pickerStatus.textContent = `Found: #${task.displayId || task.id} ${task.title}. Click Confirm to add as sub-task.`;
+      pickerStatus.className = "subtask-picker-status";
+    } catch (error) {
+      pickedTask = null;
+      listEl.innerHTML = "";
+      updateConfirmState();
+      pickerStatus.textContent = error.message;
+      pickerStatus.className = "subtask-picker-status error";
+    }
+  }
+
+  closeBtn.addEventListener("click", closeModal);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeModal();
+  });
+
+  confirmBtn.addEventListener("click", () => {
+    if (!pickedTask) return;
+    setSelectedParentTask(pickedTask);
+    setStatus(`Will add as sub-task of #${pickedTask.displayId || pickedTask.id}. Save to create.`);
+    closeModal();
+  });
+
+  manualIdBtn.addEventListener("click", applyManualTaskId);
+  manualIdInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") applyManualTaskId();
+  });
+
+  if (pickedTask) {
+    manualIdInput.value = String(pickedTask.displayId || pickedTask.id);
+    renderParentTaskList(listEl, [pickedTask], pickedTask.id, selectTask);
+  }
+
+  updateConfirmState();
+  manualIdInput.focus();
 }
 
 function cleanListItem(item) {
@@ -1125,6 +1446,147 @@ function getFieldLabel(field) {
 
   labels.push(id, name, placeholder, ariaLabel);
   return labels.filter(Boolean).join(" ").toLowerCase();
+}
+
+function createDraftKey() {
+  return (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildTipTapDescriptionDoc(text, imageUrls = []) {
+  const content = [];
+  const blocks = String(text || "").trim().split(/\n{2,}/).filter(Boolean);
+
+  blocks.forEach(block => {
+    const lines = block.split("\n");
+    const paragraphContent = [];
+
+    lines.forEach((line, index) => {
+      if (index > 0) paragraphContent.push({ type: "hardBreak" });
+      const labelMatch = line.match(/^([^:\n]+:)(.*)$/);
+      if (labelMatch && /^(Steps to Reproduce|Expected Result|Actual Result)/i.test(labelMatch[1])) {
+        paragraphContent.push({ type: "text", text: labelMatch[1], marks: [{ type: "bold" }] });
+        if (labelMatch[2]) paragraphContent.push({ type: "text", text: labelMatch[2] });
+      } else {
+        paragraphContent.push({ type: "text", text: line });
+      }
+    });
+
+    content.push({
+      type: "paragraph",
+      content: paragraphContent.length ? paragraphContent : [{ type: "text", text: block }]
+    });
+  });
+
+  if (imageUrls.length) {
+    content.push({
+      type: "paragraph",
+      content: [{ type: "text", text: "Screenshots:", marks: [{ type: "bold" }] }]
+    });
+    imageUrls.forEach(url => {
+      content.push({
+        type: "image",
+        attrs: { src: url, alt: "Screenshot", title: "Screenshot" }
+      });
+    });
+  }
+
+  return { type: "doc", content: content.length ? content : [{ type: "paragraph" }] };
+}
+
+function buildTipTapDescriptionPayload(text, imageUrls = []) {
+  if (!imageUrls.length) return String(text || "");
+  return JSON.stringify(buildTipTapDescriptionDoc(text, imageUrls));
+}
+
+function tipTapDocToHtml(doc) {
+  if (!doc?.content) return "";
+
+  return doc.content.map(node => {
+    if (node.type === "paragraph") {
+      const inner = (node.content || []).map(child => {
+        if (child.type === "hardBreak") return "<br>";
+        if (child.type !== "text") return "";
+        const text = escapeHtml(child.text || "");
+        return child.marks?.some(mark => mark.type === "bold") ? `<strong>${text}</strong>` : text;
+      }).join("");
+      return `<p>${inner}</p>`;
+    }
+
+    if (node.type === "image") {
+      const src = escapeHtml(node.attrs?.src || "");
+      const alt = escapeHtml(node.attrs?.alt || "Screenshot");
+      return `<p><img src="${src}" alt="${alt}"></p>`;
+    }
+
+    return "";
+  }).join("");
+}
+
+function syncDescriptionHiddenField(editor, payload) {
+  const form = editor?.closest("form") || document.querySelector("form");
+  const hidden = form?.querySelector('input[name="description"]')
+    || document.querySelector('input[name="description"]');
+  if (hidden) {
+    hidden.value = payload;
+  }
+}
+
+function syncDraftKeyField(draftKey) {
+  if (!draftKey) return;
+  const form = document.querySelector("form");
+  const draftField = form?.querySelector('input[name="draft_key"]')
+    || document.querySelector('input[name="draft_key"]');
+  if (draftField) {
+    draftField.value = draftKey;
+  }
+}
+
+function dispatchDescriptionFieldEvents(field) {
+  field.dispatchEvent(new Event("beforeinput", { bubbles: true }));
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  field.dispatchEvent(new Event("change", { bubbles: true }));
+  field.dispatchEvent(new Event("blur", { bubbles: true }));
+}
+
+function setDescriptionFieldValue(field, text, imageUrls = []) {
+  if (!field) return;
+
+  if (!imageUrls.length) {
+    setFieldValue(field, text);
+    return;
+  }
+
+  const doc = buildTipTapDescriptionDoc(text, imageUrls);
+  const payload = JSON.stringify(doc);
+  const html = tipTapDocToHtml(doc);
+
+  field.focus();
+
+  if (field.isContentEditable || field.classList?.contains("ProseMirror")) {
+    field.innerHTML = html;
+    syncDescriptionHiddenField(field, payload);
+    dispatchDescriptionFieldEvents(field);
+    return;
+  }
+
+  const prototype = Object.getPrototypeOf(field);
+  const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
+  if (descriptor?.set) {
+    descriptor.set.call(field, payload);
+  } else {
+    field.value = payload;
+  }
+  dispatchDescriptionFieldEvents(field);
 }
 
 function setFieldValue(field, value) {
@@ -1389,7 +1851,7 @@ function setFileInputFiles(inputField, base64Strings) {
   inputField.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-async function uploadImage(imgBase64) {
+async function uploadImage(imgBase64, draftKey = null) {
   const arr = imgBase64.split(',');
   const mime = arr[0].match(/:(.*?);/)[1];
   const bstr = atob(arr[1]);
@@ -1404,12 +1866,8 @@ async function uploadImage(imgBase64) {
   const xsrfToken = xsrfCookie ? decodeURIComponent(xsrfCookie.split('=')[1]) : '';
   
   const formData = new FormData();
-  formData.append("image", blob, `screenshot_${Date.now()}.png`);
-  
-  const draftKey = (typeof crypto !== 'undefined' && crypto.randomUUID) 
-    ? crypto.randomUUID() 
-    : Math.random().toString(36).substring(2) + Date.now().toString(36);
-  formData.append("draft_key", draftKey);
+  formData.append("image", blob, getScreenshotFilenamePrefix(imgBase64));
+  formData.append("draft_key", draftKey || createDraftKey());
   
   const response = await fetch("https://intrackr.thalia-apps.com/tasks/description-images", {
     method: "POST",
@@ -1428,7 +1886,10 @@ async function uploadImage(imgBase64) {
   }
   
   const data = await response.json();
-  return data.url;
+  return {
+    url: data.url || data.path || data.src || "",
+    html: data.html || data.tag || null
+  };
 }
 
 async function fillIntrackrForm() {
@@ -1482,27 +1943,29 @@ async function fillIntrackrForm() {
 
   const selectedCategory = selectTaskCategory(typeValue);
 
-  let finalDescription = descriptionValue;
   const insertBtn = document.getElementById("intrackr-ai-insert");
   let fileStatusMsg = "";
+  let uploadedUrls = [];
+  let uploadDraftKey = null;
 
   if (selectedImages.length > 0) {
     insertBtn.disabled = true;
     setStatus("Uploading screenshot(s) to InTrackr...");
+    uploadDraftKey = createDraftKey();
     try {
-      const uploadedUrls = [];
       for (const img of selectedImages) {
         try {
-          const url = await uploadImage(img);
-          uploadedUrls.push(url);
+          const uploaded = await uploadImage(img, uploadDraftKey);
+          if (uploaded?.url) {
+            uploadedUrls.push(uploaded.url);
+          }
         } catch (e) {
           console.error("Failed to upload image:", e);
         }
       }
 
       if (uploadedUrls.length > 0) {
-        finalDescription += "\n\nScreenshots:\n" + uploadedUrls.map(url => "- " + url).join("\n");
-        fileStatusMsg = ` and uploaded ${uploadedUrls.length} image(s)`;
+        fileStatusMsg = ` and embedded ${uploadedUrls.length} screenshot(s)`;
       }
     } catch (err) {
       console.error("Image upload flow failed:", err);
@@ -1513,7 +1976,8 @@ async function fillIntrackrForm() {
   }
 
   if (titleField) setFieldValue(titleField, titleValue);
-  if (descriptionField) setFieldValue(descriptionField, finalDescription);
+  if (descriptionField) setDescriptionFieldValue(descriptionField, descriptionValue, uploadedUrls);
+  if (uploadDraftKey) syncDraftKeyField(uploadDraftKey);
   if (projectField && projectValue) setFieldValue(projectField, projectValue);
   if (priorityField) setFieldValue(priorityField, priorityValue);
   if (typeField) setFieldValue(typeField, typeValue || generatedTask.type || "");
@@ -1549,18 +2013,48 @@ async function fillIntrackrForm() {
 document.getElementById("intrackr-ai-generate").addEventListener("click", generateTask);
 document.getElementById("intrackr-ai-insert").addEventListener("click", fillIntrackrForm);
 document.getElementById("intrackr-ai-save-direct").addEventListener("click", saveTaskToInTrackr);
+linkSubtaskBtn.addEventListener("click", () => {
+  if (!titleInput.value.trim() && !output.value.trim()) {
+    setStatus("Generate or enter a task first before adding as sub-task.", true);
+    return;
+  }
+  openParentTaskPickerModal();
+});
+parentLinkClearBtn.addEventListener("click", () => {
+  setSelectedParentTask(null);
+  setStatus("Parent task removed.");
+});
 settingsBtn.addEventListener("click", () => {
   const isVisible = settingsPanel.style.display !== "none";
   settingsPanel.style.display = isVisible ? "none" : "block";
   settingsBtn.classList.toggle("active", !isVisible);
 });
 
+openaiKeySelect.addEventListener("change", () => {
+  if (openaiKeySelect.value === "custom") {
+    customKeyContainer.style.display = "block";
+    openaiKeyInput.focus();
+  } else {
+    customKeyContainer.style.display = "none";
+  }
+});
+
 saveSettingsBtn.addEventListener("click", () => {
-  const key = openaiKeyInput.value.trim();
-  if (!key) {
-    settingsStatus.textContent = "Please enter a key before saving.";
-    settingsStatus.className = "error";
-    return;
+  let key = "";
+  if (openaiKeySelect.value === "custom") {
+    key = openaiKeyInput.value.trim();
+    if (!key) {
+      settingsStatus.textContent = "Please enter a custom key before saving.";
+      settingsStatus.className = "error";
+      return;
+    }
+  } else {
+    key = openaiKeySelect.value;
+    if (!key) {
+      settingsStatus.textContent = "Please select or enter an API key before saving.";
+      settingsStatus.className = "error";
+      return;
+    }
   }
   if (isContextValid()) {
     chrome.storage.local.set({ intrackr_openai_api_key: key }, () => {
@@ -1578,7 +2072,9 @@ saveSettingsBtn.addEventListener("click", () => {
 clearSettingsBtn.addEventListener("click", () => {
   if (isContextValid()) {
     chrome.storage.local.remove("intrackr_openai_api_key", () => {
+      openaiKeySelect.value = "";
       openaiKeyInput.value = "";
+      customKeyContainer.style.display = "none";
       updateSettingsStatus(false);
       settingsStatus.textContent = "Key cleared.";
       settingsStatus.className = "error";
@@ -1606,6 +2102,7 @@ document.getElementById("intrackr-ai-reset").addEventListener("click", () => {
   output.value = "";
   generatedTask = null;
   selectedImages = [];
+  setSelectedParentTask(null);
   imageInput.value = "";
   if (previewGrid) {
     previewGrid.innerHTML = "";
@@ -1746,6 +2243,84 @@ document.addEventListener("mousemove", event => {
   sidebar.style.bottom = "auto";
 });
 
+// Image quality settings for screenshots embedded in InTrackr tasks
+const SCREENSHOT_MAX_DIMENSION = 2560;
+const SCREENSHOT_JPEG_QUALITY = 0.92;
+const SCREENSHOT_PREFER_PNG = true;
+
+function scaleScreenshotDimensions(width, height, maxDim = SCREENSHOT_MAX_DIMENSION) {
+  let targetW = width;
+  let targetH = height;
+
+  if (targetW <= maxDim && targetH <= maxDim) {
+    return { width: targetW, height: targetH };
+  }
+
+  if (targetW > targetH) {
+    targetH = Math.round((targetH * maxDim) / targetW);
+    targetW = maxDim;
+  } else {
+    targetW = Math.round((targetW * maxDim) / targetH);
+    targetH = maxDim;
+  }
+
+  return { width: targetW, height: targetH };
+}
+
+function configureHighQualityCanvasContext(ctx) {
+  ctx.imageSmoothingEnabled = true;
+  if ("imageSmoothingQuality" in ctx) {
+    ctx.imageSmoothingQuality = "high";
+  }
+}
+
+function exportCanvasToScreenshotDataUrl(sourceCanvas, sourceWidth, sourceHeight, options = {}) {
+  const maxDim = options.maxDim ?? SCREENSHOT_MAX_DIMENSION;
+  const preferPng = options.preferPng ?? SCREENSHOT_PREFER_PNG;
+  const jpegQuality = options.jpegQuality ?? SCREENSHOT_JPEG_QUALITY;
+  const { width: targetW, height: targetH } = scaleScreenshotDimensions(sourceWidth, sourceHeight, maxDim);
+
+  if (targetW === sourceWidth && targetH === sourceHeight) {
+    return preferPng
+      ? sourceCanvas.toDataURL("image/png")
+      : sourceCanvas.toDataURL("image/jpeg", jpegQuality);
+  }
+
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = targetW;
+  tempCanvas.height = targetH;
+  const tempCtx = tempCanvas.getContext("2d");
+  configureHighQualityCanvasContext(tempCtx);
+  tempCtx.drawImage(sourceCanvas, 0, 0, sourceWidth, sourceHeight, 0, 0, targetW, targetH);
+
+  return preferPng
+    ? tempCanvas.toDataURL("image/png")
+    : tempCanvas.toDataURL("image/jpeg", jpegQuality);
+}
+
+function exportImageToScreenshotDataUrl(img, options = {}) {
+  const { width: targetW, height: targetH } = scaleScreenshotDimensions(img.width, img.height, options.maxDim);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  configureHighQualityCanvasContext(ctx);
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+
+  const preferPng = options.preferPng ?? SCREENSHOT_PREFER_PNG;
+  const jpegQuality = options.jpegQuality ?? SCREENSHOT_JPEG_QUALITY;
+  return preferPng
+    ? canvas.toDataURL("image/png")
+    : canvas.toDataURL("image/jpeg", jpegQuality);
+}
+
+function getScreenshotFilenamePrefix(dataUrl, index = 1) {
+  const mime = String(dataUrl || "").split(",")[0].match(/:(.*?);/)?.[1] || "image/png";
+  const ext = mime.split("/")[1] || "png";
+  return `screenshot_${index}.${ext}`;
+}
+
 // Image Resizing and Import Helpers
 function processAndResizeImage(file) {
   return new Promise((resolve, reject) => {
@@ -1758,29 +2333,7 @@ function processAndResizeImage(file) {
     reader.onload = e => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 1200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-        resolve(dataUrl);
+        resolve(exportImageToScreenshotDataUrl(img));
       };
       img.onerror = () => reject(new Error("Failed to load image for resizing"));
       img.src = e.target.result;
